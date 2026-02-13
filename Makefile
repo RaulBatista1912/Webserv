@@ -2,7 +2,7 @@ NAME = webserv
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRCS = main.cpp Client.cpp Server.cpp
+SRCS = main.cpp Client.cpp Server.cpp Config.cpp
 OBJS = $(SRCS:%.cpp=obj/%.o)
 
 all: $(NAME)

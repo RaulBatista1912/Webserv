@@ -5,27 +5,50 @@
 #include <poll.h>
 #include "Client.hpp"
 #include "Server.hpp"
+#include "Config.hpp"
 
-int main()
+int main(int ac, char** av)
 {
+    if (ac != 2) {
+        std::cerr << "Usage: ./webserv <config_file>\n";
+        return 1;
+    }
     try {
-        Server server(8080);
-        std::cout << "Server listening on port " << server.getPort() << std::endl;
+        Config config(av[1]); 
+        const std::vector<ServerConfig>& serverConfigs = config.getServers();
+        std::vector<Server*> servers;
         std::vector<pollfd> fds;
         std::map<int, Client*> clients;
 
-        pollfd serverPoll;
-        serverPoll.fd = server.getFd();
-        serverPoll.events = POLLIN;
-        serverPoll.revents = 0;
-        fds.push_back(serverPoll);
+        for (size_t i = 0; i < serverConfigs.size(); ++i) {
+            Server* srv = new Server(serverConfigs[i].port);
+            servers.push_back(srv);
 
+            pollfd p;
+            p.fd = srv->getFd();
+            p.events = POLLIN;
+            p.revents = 0;
+            fds.push_back(p);
+
+            std::cout << "Listening on port " << serverConfigs[i].port << std::endl;
+        }
         while (true) {
             if (poll(&fds[0], fds.size(), -1) < 0)
-                break;
+                throw std::runtime_error("poll failed");
+
             for (size_t i = 0; i < fds.size(); ++i) {
-                if (fds[i].fd == server.getFd() && (fds[i].revents & POLLIN)) {
-                    int clientFd = server.acceptClient();
+                bool isServer = false;
+                Server* currentServer = NULL;
+
+                for (size_t s = 0; s < servers.size(); ++s) {
+                    if (fds[i].fd == servers[s]->getFd()) {
+                        isServer = true;
+                        currentServer = servers[s];
+                        break;
+                    }
+                }
+                if (isServer && (fds[i].revents & POLLIN)) {
+                    int clientFd = currentServer->acceptClient();
                     if (clientFd >= 0) {
                         Client* c = new Client(clientFd);
                         clients[clientFd] = c;
@@ -62,7 +85,7 @@ int main()
         }
     }
     catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
     }
-    return (0);
+    return 0;
 }

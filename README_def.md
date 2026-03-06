@@ -35,6 +35,39 @@ and several clients at the same time :
 - poll
 - or epoll
 
+3) Parsing HTTP Request:
+
+understand the request:
+METHOD
+PATH
+HEADERS
+BODY
+
+Example:
+
+element	example:
+- Method	GET
+- Path	/index.html
+- Header	Host
+- Body	POST data
+
+4) Response generation:
+To Build:
+- status line
+- headers
+- body
+
+5️⃣ Advanced Tools:
+
+Selon le sujet :
+- CGI
+- upload
+- delete
+- autoindex
+- error handlers
+- gestion multiple server blocks
+
+
 # socket:
 A socket (literally "plug") is a software interface that allows two programs to communicate with each other over a network. Think of it as the endpoint of a bidirectional communication channel between a client and a server.
 

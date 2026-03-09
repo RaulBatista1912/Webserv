@@ -30,3 +30,4 @@ class Client {
 		State	getState() const;
 		int		getFd() const;
 };
+//Goal: To handle the client's connection

@@ -1,6 +1,5 @@
 #include "Client.hpp"
 
-
 Client::Client(int fd) : fd(fd), state(READING) {
 
 }
@@ -22,7 +21,7 @@ bool Client::readFromSocket() {
 				"Content-Length: 5\r\n"
 				"Connection: close\r\n"
 				"\r\n"
-				"Hello";
+				"Blacked.com";
 			state = WRITING;
 		}
 		return (true);

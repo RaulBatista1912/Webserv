@@ -4,8 +4,8 @@
 
 class Server {
     private:
-        int fd;// server's socket
-        int port; // port where the server listens for incoming connections
+        int _fd;// server's socket
+        int _port; // port where the server listens for incoming connections
     public:
         Server(int port);
         ~Server();

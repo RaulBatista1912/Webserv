@@ -9,7 +9,7 @@ Config::Config(const std::string& path) {
 }
 
 const std::vector<ServerConfig>& Config::getServers() const {
-	return (servers);
+	return (_servers);
 }
 
 void Config::ParseFile(const std::string& path) {
@@ -24,7 +24,7 @@ void Config::ParseFile(const std::string& path) {
 			ParseServerBlock(file);
 		}
 	}
-	if (servers.empty()) {
+	if (_servers.empty()) {
 		std::cerr << "Error: no server block found\n";
 		std::exit(1);
 	}
@@ -49,6 +49,6 @@ void Config::ParseServerBlock(std::ifstream& file) {
 		std::cerr << "Error: invalid listen port\n";
 		std::exit(1);
 	}
-	servers.push_back(server);
+	_servers.push_back(server);
 }
 

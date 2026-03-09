@@ -3,9 +3,9 @@
 #include <iostream>
 #include <cstdio>
 #include <poll.h>
-#include "Client.hpp"
-#include "Server.hpp"
-#include "Config.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/Server.hpp"
+#include "../includes/Config.hpp"
 
 int main(int ac, char** av)
 {

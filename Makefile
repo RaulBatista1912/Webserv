@@ -1,28 +1,50 @@
-NAME = webserv
-CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+# **************************************************************************** #
+#                                   CONFIG                                     #
+# **************************************************************************** #
 
-SRCS = main.cpp Client.cpp Server.cpp Config.cpp
-OBJS = $(SRCS:%.cpp=obj/%.o)
+NAME        = webserv
+CXX         = c++
+CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
+RM          = rm -f
+
+SRC_DIR     = src
+OBJ_DIR     = obj
+
+SRC         = $(SRC_DIR)/main.cpp \
+				$(SRC_DIR)/Client.cpp \
+				$(SRC_DIR)/Server.cpp \
+				$(SRC_DIR)/Config.cpp
+
+OBJ         = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# **************************************************************************** #
+#                                   RULES                                      #
+# **************************************************************************** #
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
+	@echo "✅ Build complete: $(NAME)"
 
-obj:
-	mkdir -p obj
-
-obj/%.o: %.cpp | obj
+# Rule to compile .cpp → .o inside objs/
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+	@echo "Compiled: $< → $@"
 
 clean:
-	rm -rf obj
+	$(RM) -r $(OBJ_DIR)
+	@echo "🧹 Object files removed"
 
 fclean: clean
-	rm -f $(NAME)
-	rm -rf obj
+	$(RM) $(NAME)
+	@echo "🗑️  Executable removed"
 
 re: fclean all
+
+# **************************************************************************** #
+#                                   UTILS                                      #
+# **************************************************************************** #
 
 .PHONY: all clean fclean re

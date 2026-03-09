@@ -4,8 +4,8 @@
 
 class Server {
     private:
-        int fd;
-        int port;
+        int fd;// server's socket
+        int port; // port where the server listens for incoming connections
     public:
         Server(int port);
         ~Server();
@@ -14,3 +14,4 @@ class Server {
         int getPort() const;
         int acceptClient() const;
 };
+//Goal: To listen the incoming connections

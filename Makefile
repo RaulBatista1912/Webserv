@@ -13,6 +13,7 @@ OBJ_DIR     = obj
 SRC         = $(SRC_DIR)/main.cpp \
 				$(SRC_DIR)/Client.cpp \
 				$(SRC_DIR)/Server.cpp \
+				$(SRC_DIR)/Request.cpp \
 				$(SRC_DIR)/Config.cpp
 
 OBJ         = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

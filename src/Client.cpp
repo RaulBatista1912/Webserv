@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include <iostream>
 
 Client::Client(int fd) : fd(fd), state(READING) {
 
@@ -11,23 +12,20 @@ Client::~Client() {
 
 bool Client::readFromSocket() {
 	char buffer[4096];
+	int bytes = recv(fd, buffer, 4096, 0);
 
-	ssize_t bytes = recv(fd, buffer, 4096, 0);
-	if (bytes > 0) {
-		readBuffer.append(buffer, bytes);
-		if (readBuffer.find("\r\n\r\n") != std::string::npos) {
-			writeBuffer =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Length: 5\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-				"Hello";
-			state = WRITING;
+	if (bytes <= 0)
+		return false;
+	readBuffer.append(buffer, bytes);
+
+	if (readBuffer.find("\r\n\r\n") != std::string::npos) {
+		if (_request.parse(readBuffer)) {
+			std::cout << "Method: " << _request.getMethod() << std::endl;
+			std::cout << "Path: " << _request.getPath() << std::endl;
+			std::cout << "Version: " << _request.getVersion() << std::endl;
 		}
-		return (true);
 	}
-	state = CLOSED;
-	return (false);
+	return true;
 }
 
 bool Client::writeToSocket() {

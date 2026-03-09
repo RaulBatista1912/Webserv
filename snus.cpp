@@ -1,4 +1,3 @@
-
 // Verifie les sockets dans fds, attends qu'un evenement arrive comme POLLIN, POLLOUT ou POLLERR/POLLHUP
 // si un client envoie des donnes ou si le serveur a une connexion -> poll remplit revents, return le nombre de sockets actifs(osef pour nous)
 // si erreur -> return -1
@@ -65,3 +64,12 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen); // socket ser
 //default.conf
 // fichier de configuration pour les serveurs, chaque bloc contient son port, son nom et son IP et d'autres trucs par la suite qu'on va mettre comme les requetes GET, POST OU DELETE
 // ou les locations pour dire ou ses situent les fichiers HTML et les pages d'erreurs en HTML comme error 404 etc.
+
+
+//request HTTP exemple:
+//POST /login HTTP/1.1\r\n              -> Request line, POST = _method, /login = _path, HTTP/1.1 = _version
+//Host: example.com\r\n                 -> Headers
+//Content-Type: application/json\r\n    -> Headers dans un container <map> car plus simple, key = Content-Type, valeur = application/json 
+//Content-Length: 27\r\n                -> Headers
+//\r\n                                  -> Separateur headers/body
+//{"username":"alice","pwd":"1234"}     -> Body

@@ -5,15 +5,23 @@
 int poll(struct pollfd *fds, nfds_t nfds, int timeout); 
 // struct pollfd, nombre d'elements, -1 pour indefiniment(ce qu'on veut)
 
+//struct pollfd dans <poll.h>
 struct pollfd {
     int fd;        // descripteur de fichier
     short events;  // événements à surveiller
     short revents; // événements détectés
 };
 
+//constantes pour revents
+POLLIN    // données disponibles pour lecture
+POLLOUT   // écriture possible
+POLLERR   // erreur
+POLLHUP   // connexion fermée
+
 |=  // ajout de bits, par exemple : fds[i].events = POLLIN
     //                              fds[i].event |= POLLOUT
     //                              fds[i].events = POLLIN | POLLOUT
+    // le bit de events devient POLLIN ET POLLOUT
 
 //creation du socket
 fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +41,15 @@ setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 if (bind(fd, (sockaddr*)&addr, sizeof(addr)) < 0)
 // associe le socket a une adresse IP et port precis
 
-sockaddr_in addr; // struct IPv4
+//struct sockaddr_in IPv4 dans <netinet/in.h>
+struct sockaddr_in {
+    sa_family_t    sin_family;   // famille d'adresse (AF_INET pour IPv4)
+    in_port_t      sin_port;     // port (en network byte order)
+    struct in_addr sin_addr;     // adresse IPv4
+    unsigned char  sin_zero[8];  // padding pour alignement
+};
+
+sockaddr_in addr;
 std::memset(&addr, 0, sizeof(addr)); // initialise a 0
 addr.sin_family = AF_INET; // IPv4
 addr.sin_addr.s_addr = INADDR_ANY; // accepte toutes les interfaces reseau
@@ -45,3 +61,7 @@ listen(fd, 10) // transforme le socket en mode passif, il devient pret a accpete
 
 // accept(fd, NULL, NULL) suffit pour nous, osef de l'address et la taille de la struct
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen); // socket serveur en ecoute, ptr vers struct qui recoit l'addresse du client, ptr vers un entier qui a la taille de la struct addr 
+
+//default.conf
+// fichier de configuration pour les serveurs, chaque bloc contient son port, son nom et son IP et d'autres trucs par la suite qu'on va mettre comme les requetes GET, POST OU DELETE
+// ou les locations pour dire ou ses situent les fichiers HTML et les pages d'erreurs en HTML comme error 404 etc.

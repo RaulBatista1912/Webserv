@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <fstream>
 #include "ServerConfig.hpp"
 
 class Config {
@@ -12,6 +13,7 @@ class Config {
 
     public:
         Config(const std::string& path);
-        const std::vector<ServerConfig>& getServers() const;
 
+        void  checkListValueDebug(const ServerConfig& srv);
+        const std::vector<ServerConfig>& getServers() const;
 };

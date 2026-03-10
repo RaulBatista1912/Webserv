@@ -3,11 +3,9 @@
 #include <iostream>
 
 Request::Request() {
-
 }
 
 Request::~Request() {
-
 }
 
 bool Request::parse(const std::string& Request) {

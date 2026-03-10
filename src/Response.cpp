@@ -1,11 +1,9 @@
 #include "../includes/Response.hpp"
 
-Response::Response()
-{
+Response::Response() {
 }
 
-Response::~Response()
-{
+Response::~Response() {
 }
 
 std::string Response::buildResponse(std::string body)

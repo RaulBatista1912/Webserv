@@ -14,13 +14,13 @@ Client::~Client() {
 bool Client::readFromSocket() {
 	char buffer[4096];
 	Response res;
-	int bytes = recv(_fd, buffer, 4096, 0);// receive the client's request maybe in piece
+	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
 
 	if (bytes <= 0)
 		return false;
 	_readBuffer.append(buffer, bytes);
 	
-	//debuging
+	// debuging
 	if (_readBuffer.find("\r\n\r\n") != std::string::npos) {
 		if (_request.parse(_readBuffer)) { 
 			std::cout << "Method: " << _request.getMethod() << std::endl;
@@ -31,10 +31,11 @@ bool Client::readFromSocket() {
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
 				std::cout << it->first << ": " << it->second << std::endl;
 			}
-			_writeBuffer = res.buildResponse("Hello Webserv");
-			_state = WRITING;
+			std::cout << "Body: " << _request.getBody() << std::endl;
 		}
 	}
+	_writeBuffer = res.buildResponse("Hello Webserv");
+	_state = WRITING;
 	return true;
 }
 

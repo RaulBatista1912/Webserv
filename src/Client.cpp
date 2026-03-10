@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include "../includes/Response.hpp"
 
 Client::Client(int fd) : fd(fd), state(READING) {
 
@@ -11,17 +12,12 @@ Client::~Client() {
 
 bool Client::readFromSocket() {
 	char buffer[4096];
-
+	Response res;
 	ssize_t bytes = recv(fd, buffer, 4096, 0);
 	if (bytes > 0) {
 		readBuffer.append(buffer, bytes);
 		if (readBuffer.find("\r\n\r\n") != std::string::npos) {
-			writeBuffer =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Length: 5\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-				"Hello";
+			writeBuffer = res.buildResponse("Hello");
 			state = WRITING;
 		}
 		return (true);

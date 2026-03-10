@@ -21,4 +21,5 @@ class Request {
         const std::string& getPath() const;
         const std::string& getVersion() const;
         const std::map<std::string, std::string>& getHeaders() const;
+        const std::string& getBody() const;
 };

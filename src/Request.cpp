@@ -40,6 +40,9 @@ bool Request::parse(const std::string& Request) {
             value.erase(0, 1);
         _headers[key] = value;
     }
+    std::string body;
+    std::getline(ss, body, '\0');
+    _body = body;
     return true;
 }
 
@@ -53,6 +56,10 @@ const std::string& Request::getPath() const {
 
 const std::string& Request::getVersion() const {
     return _version;
+}
+
+const std::string& Request::getBody() const {
+    return _body;
 }
 
 const std::map<std::string, std::string>& Request::getHeaders() const {

@@ -67,7 +67,7 @@ int main(int ac, char** av)
 					}
 				}
 				// socket client, lire ou ecrire avec le client
-				else if (fds[i].revents & (POLLIN | POLLOUT)) {
+				else if (fds[i].revents & (POLLIN | POLLOUT)) { // vrai si soit POLLIN, soit POLLOUT, soit les deux
 					Client* c = clients[fds[i].fd];
 					// lecture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLIN) && !c->readFromSocket())

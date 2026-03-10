@@ -29,12 +29,12 @@ fd = socket(AF_INET, SOCK_STREAM, 0);
 //             != UDP(protocol de transfert rapide, privilegie la vitesse a la fiablilite, utilise pour les jeux, le streaming etc)
 // 0 == protocole par defaut
 
-// set options on socket
+// set options on socket avant de bind()
 int opt = 1;
 setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 // fd == le socket
 // SOL_SOCKET == option pour le socket lui meme
-// SO_REUSEADDR == utiliser le serveur sur le meme port 
+// SO_REUSEADDR == permet de rebind rapidement le port apres l'arret d'un server
 // &opt, sizeof(opt) == valeur 1 pour activer l'option, 0 pour desactiver, la fonction attend un pointeur vers la valeur
 
 if (bind(fd, (sockaddr*)&addr, sizeof(addr)) < 0)

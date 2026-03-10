@@ -3,6 +3,7 @@
 #include <string>
 #include <unistd.h>
 #include <sys/socket.h>
+#include "Request.hpp"
 
 class Client {
 	public:
@@ -12,10 +13,11 @@ class Client {
 			CLOSED
 		};
 	private:
-		int fd; // refers to the client's socket
-		State state;// the current state of the connexion
-		std::string readBuffer;// contain the client's http request
-		std::string writeBuffer;// contain the server's response
+		int _fd; // refers to the client's socket
+		State _state;// the current state of the connexion
+		std::string _readBuffer;// contain the client's http request
+		std::string _writeBuffer;// contain the server's response
+		Request _request;
 
 	public:
 		Client(int fd); // open the connexion

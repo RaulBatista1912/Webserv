@@ -6,7 +6,7 @@
 
 class Config {
     private:
-        std::vector<ServerConfig> servers;
+        std::vector<ServerConfig> _servers;
         void    ParseFile(const std::string& path);
         void    ParseServerBlock(std::ifstream& file);
 

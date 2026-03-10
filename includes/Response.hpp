@@ -6,7 +6,7 @@
 class Response
 {
 private:
-	int statusCode;
+	//int statusCode;
 	std::string reasonPhrase;
 	std::map<std::string, std::string> headers;
 	std::string body;

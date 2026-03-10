@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include "../includes/Response.hpp"
 #include <iostream>
 
 Client::Client(int fd) : _fd(fd), _state(READING) {
@@ -12,7 +13,8 @@ Client::~Client() {
 
 bool Client::readFromSocket() {
 	char buffer[4096];
-	int bytes = recv(_fd, buffer, 4096, 0);
+	Response res;
+	int bytes = recv(_fd, buffer, 4096, 0);// receive the client's request maybe in piece
 
 	if (bytes <= 0)
 		return false;
@@ -29,6 +31,8 @@ bool Client::readFromSocket() {
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
 				std::cout << it->first << ": " << it->second << std::endl;
 			}
+			_writeBuffer = res.buildResponse("Hello Webserv");
+			_state = WRITING;
 		}
 	}
 	return true;

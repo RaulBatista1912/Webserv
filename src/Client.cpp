@@ -1,6 +1,5 @@
 #include "../includes/Client.hpp"
 #include "../includes/Response.hpp"
-#include <iostream>
 
 Client::Client(int fd) : _fd(fd), _state(READING) {
 
@@ -31,7 +30,25 @@ bool Client::readFromSocket() {
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
 				std::cout << it->first << ": " << it->second << std::endl;
 			}
-			_writeBuffer = res.buildResponse("Hello Webserv");
+			std::string file = "../www" + _request.getPath();
+			std::ifstream webPage(file.c_str());
+			std::string body;
+			if (webPage)
+			{
+				std::string body;
+				std::string line;
+
+				while (std::getline(webPage, line))
+				{
+					body += line + "\n";
+				}
+			}
+			else
+			{
+				body = "404 Not Found";
+			}
+
+			_writeBuffer = res.buildResponse(body);
 			_state = WRITING;
 		}
 	}

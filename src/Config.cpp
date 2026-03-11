@@ -1,9 +1,11 @@
 #include "../includes/Config.hpp"
 
 void	Config::checkListValueDebug(const ServerConfig& srv) {
-	std::cout << std::endl << "Server Name: " << srv.serverName << std::endl <<
-		"Host: " << srv.host << std::endl << "Port: " << srv.port << std::endl 
-		<< "Root: " << srv.root << std::endl << std::endl;
+	std::cout << "Server Name: " << srv.serverName << std::endl;
+	std::cout << "Host: " << srv.host << std::endl;
+	std::cout << "Port: " << srv.port << std::endl;
+	std::cout << "Root: " << srv.root << std::endl;
+	std::cout << std::endl;
 }
 
 // Supprime les espaces et tabs au début et à la fin de la str

@@ -72,10 +72,10 @@ int main(int ac, char** av)
 					// lecture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLIN) && !c->readFromSocket())
 						c->setState(Client::CLOSED);
-					//ecriture, si erreur -> on met en CLOSED
+					// ecriture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLOUT) && !c->writeToSocket())
 						c->setState(Client::CLOSED);
-					//si le client ferme ou erreur
+					// si le client ferme ou erreur
 					if (c->getState() == Client::CLOSED) {
 						close(c->getFd());
 						delete c;
@@ -85,10 +85,10 @@ int main(int ac, char** av)
 						continue;
 					}
 					fds[i].events = 0;
-					//si le client est en READING, on dit a poll de surveiller l'arrivee de donnes POLLIN
+					// si le client est en READING, on dit a poll de surveiller l'arrivee de donnes POLLIN
 					if (c->getState() == Client::READING)
 						fds[i].events |= POLLIN;
-					//si le serveur doit envoyer des donnes au client, on dit a poll de surveiller quand le socket est pret a ecrire
+					// si le serveur doit envoyer des donnes au client, on dit a poll de surveiller quand le socket est pret a ecrire
 					if (c->getState() == Client::WRITING)
 						fds[i].events |= POLLOUT;
 				}

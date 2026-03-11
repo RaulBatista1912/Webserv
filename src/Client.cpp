@@ -13,19 +13,19 @@ Client::~Client() {
 bool Client::readFromSocket() {
 	char buffer[4096];
 	Response res;
-	int bytes = recv(_fd, buffer, 4096, 0);// receive the client's request maybe in piece
+	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
 
 	if (bytes <= 0)
 		return false;
 	_readBuffer.append(buffer, bytes);
 	
-	//debuging
+	// debuging
 	if (_readBuffer.find("\r\n\r\n") != std::string::npos) {
 		if (_request.parse(_readBuffer)) { 
 			std::cout << "Method: " << _request.getMethod() << std::endl;
 			std::cout << "Path: " << _request.getPath() << std::endl;
 			std::cout << "Version: " << _request.getVersion() << std::endl;
-
+			std::cout << "Body: " << _request.getBody() << std::endl;
 			std::map<std::string, std::string> headers = _request.getHeaders();
 			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
 				std::cout << it->first << ": " << it->second << std::endl;
@@ -35,6 +35,7 @@ bool Client::readFromSocket() {
 			std::string body;
 			if (webPage)
 			{
+				std::cout << "Entrez" << std::endl;
 				std::string body;
 				std::string line;
 
@@ -42,16 +43,18 @@ bool Client::readFromSocket() {
 				{
 					body += line + "\n";
 				}
+				std::cout << body << std::endl;
 			}
 			else
 			{
 				body = "404 Not Found";
 			}
-
 			_writeBuffer = res.buildResponse(body);
 			_state = WRITING;
 		}
 	}
+	_writeBuffer = res.buildResponse("Hello Webserv");
+	_state = WRITING;
 	return true;
 }
 

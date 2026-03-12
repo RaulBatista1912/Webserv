@@ -40,8 +40,21 @@ bool Client::readFromSocket() {
 					std::cout << it->first << ": " << it->second << std::endl;
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
-
-				_writeBuffer = res.buildResponse("Hello Webserv");
+				//Trying to read the index.html file
+				std::string file = "../www/" + _request.getPath();
+				std::ifstream webPage(file.c_str());
+				std::string body;
+				if (webPage)
+				{
+					std::string line;
+					while (std::getline(webPage, line))
+						body += line + "\n";
+				}
+				else
+				{
+					body = "404 Not Found Honey";
+				}
+				_writeBuffer = res.buildResponse(body);
 				_state = WRITING;
 			}
 		}

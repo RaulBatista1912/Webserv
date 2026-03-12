@@ -41,7 +41,12 @@ bool Client::readFromSocket() {
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
 				//Trying to read the index.html file
-				std::string file = "../www/" + _request.getPath();
+				std::cout << "Path: " << _request.getPath() << std::endl;
+				std::string path = _request.getPath();
+				if (path == "/")
+					path = "/index.html";
+				std::string file = "www" + path;
+				std::cout << "Server is searching: " << file << std::endl;
 				std::ifstream webPage(file.c_str());
 				std::string body;
 				if (webPage)
@@ -51,9 +56,7 @@ bool Client::readFromSocket() {
 						body += line + "\n";
 				}
 				else
-				{
 					body = "404 Not Found Honey";
-				}
 				_writeBuffer = res.buildResponse(body);
 				_state = WRITING;
 			}

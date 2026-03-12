@@ -1,5 +1,7 @@
 #include "../includes/Client.hpp"
 #include "../includes/Response.hpp"
+#include <iostream>
+#include <cstdlib>
 
 Client::Client(int fd) : _fd(fd), _state(READING) {
 
@@ -18,43 +20,32 @@ bool Client::readFromSocket() {
 	if (bytes <= 0)
 		return false;
 	_readBuffer.append(buffer, bytes);
-	
-	// debuging
-	if (_readBuffer.find("\r\n\r\n") != std::string::npos) {
-		if (_request.parse(_readBuffer)) { 
-			std::cout << "Method: " << _request.getMethod() << std::endl;
-			std::cout << "Path: " << _request.getPath() << std::endl;
-			std::cout << "Version: " << _request.getVersion() << std::endl;
-			std::cout << "Body: " << _request.getBody() << std::endl;
-			std::map<std::string, std::string> headers = _request.getHeaders();
-			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-				std::cout << it->first << ": " << it->second << std::endl;
-			}
-			std::string file = "../www" + _request.getPath();
-			std::ifstream webPage(file.c_str());
-			std::string body;
-			if (webPage)
-			{
-				std::cout << "Entrez" << std::endl;
-				std::string body;
-				std::string line;
+	size_t header_end = _readBuffer.find("\r\n\r\n");
 
-				while (std::getline(webPage, line))
-				{
-					body += line + "\n";
-				}
-				std::cout << body << std::endl;
+	if (header_end != std::string::npos) {
+		if (!_request.parse(_readBuffer.substr(0, header_end + 4)))
+			return false;
+		std::map<std::string, std::string> headers = _request.getHeaders();
+		size_t body_len = 0;
+		if (headers.count("Content-Length"))
+			body_len = std::atoi(headers["Content-Length"].c_str());
+		if (_readBuffer.size() >= header_end + 4 + body_len) {
+			if (_request.parse(_readBuffer)) {
+				std::cout << "Method: " << _request.getMethod() << std::endl;
+				std::cout << "Path: " << _request.getPath() << std::endl;
+				std::cout << "Version: " << _request.getVersion() << std::endl;
+
+				std::map<std::string, std::string> headers = _request.getHeaders();
+				for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
+					std::cout << it->first << ": " << it->second << std::endl;
+
+				std::cout << "Body: " << _request.getBody() << std::endl;
+
+				_writeBuffer = res.buildResponse("Hello Webserv");
+				_state = WRITING;
 			}
-			else
-			{
-				body = "404 Not Found";
-			}
-			_writeBuffer = res.buildResponse(body);
-			_state = WRITING;
 		}
 	}
-	_writeBuffer = res.buildResponse("Hello Webserv");
-	_state = WRITING;
 	return true;
 }
 

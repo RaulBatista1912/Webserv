@@ -56,6 +56,7 @@ To Build:
 - status line
 - headers
 - body
+- 200 OK, 404 Not Found, 400 Bad Request
 
 5) Advanced Tools:
 

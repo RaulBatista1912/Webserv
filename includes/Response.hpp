@@ -1,7 +1,5 @@
 #pragma once
-#include <iostream>
-#include <sstream>
-#include <map>
+#include "Header.hpp"
 
 class Response {
 	private:

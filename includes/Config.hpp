@@ -1,8 +1,5 @@
 #pragma once
-
-#include <vector>
-#include <string>
-#include <fstream>
+#include "Header.hpp"
 #include "ServerConfig.hpp"
 
 class Config {

@@ -11,6 +11,7 @@ SRC_DIR     = src
 OBJ_DIR     = obj
 
 SRC         = $(SRC_DIR)/main.cpp \
+				$(SRC_DIR)/BlockServer.cpp \
 				$(SRC_DIR)/Client.cpp \
 				$(SRC_DIR)/Server.cpp \
 				$(SRC_DIR)/Request.cpp \

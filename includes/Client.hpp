@@ -31,4 +31,5 @@ class Client {
 		State	getState() const;
 		int		getFd() const;
 };
+std::string getContentType(const std::string &path);
 //Goal: To handle the client's connection

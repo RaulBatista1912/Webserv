@@ -2,7 +2,6 @@
 
 void	Config::checkListValueDebug(const ServerConfig& srv) {
 	std::cout << "Server Name: " << srv.serverName << std::endl;
-	std::cout << "Host: " << srv.host << std::endl;
 	std::cout << "Port: " << srv.port << std::endl;
 	std::cout << "Root: " << srv.root << std::endl;
 	std::cout << std::endl;
@@ -29,52 +28,22 @@ static std::string stripComment(const std::string& value) {
 	return value;
 }
 
-//isDigits mais le version 2
-static bool isDigits(const std::string& value) {
-	if (value.empty())
-		return false;
-	for (std::string::size_type i = 0; i < value.size(); ++i) {
-		if (!std::isdigit(static_cast<unsigned char>(value[i])))
-			return false;
-	}
-	return true;
-}
-
-//check porc
-static int parsePort(const std::string& value) {
-	if (!isDigits(value))
-		throw std::runtime_error("Error: listen port needs to be a number");
-	std::stringstream ss(value);
-	int port = -1;
-	ss >> port;
-	if (ss.fail() || !ss.eof() || port < 1024 || port > 65535)
-		throw std::runtime_error("Error: invalid listen port");
-	return port;
-}
-
-// recois le nom et l args;
-static std::string parseSingleValue(const std::string& directiveLine, const std::string& keyName) {
-	std::stringstream stream(directiveLine);
-	std::string readKey;
-	std::string value;
-
-	stream >> readKey;
-	stream >> value;
-	if (readKey.empty())
-		throw std::runtime_error("Error: lines is empty");
-	else if (value.empty())
-		throw std::runtime_error("Error: " + keyName + " block requires a value");
-
-	//check si y a pas de troisième mot ou une snus.
-	std::string extra;
-	if (stream >> extra)
-		throw std::runtime_error("Error: invalid " + keyName + " invalid syntax");
-
-	return value;
-}
-
 Config::Config(const std::string& path) {
 	ParseFile(path);
+	for (size_t i = 0; i < _servers.size(); ++i) {
+		ServerConfig &server = _servers[i];
+
+		for (size_t j = 0; j < server.locations.size(); ++j) {
+			Location &loc = server.locations[j];
+
+			if (loc.path == "/images") { // on trouve la location
+				if (loc.allowGet)
+					std::cout << "Method is allowed\n";
+				else
+					std::cout << "Method is NOT allowed\n";
+			}
+		}
+	}
 }
 
 const std::vector<ServerConfig>& Config::getServers() const {
@@ -126,14 +95,8 @@ void Config::ParseFile(const std::string& path) {
 void Config::ParseServerBlock(std::ifstream& file) {
 	ServerConfig server;
 	std::string line;
-	bool listenFound = false;
-	bool serverNameFound = false;
-	bool hostFound = false;
-	bool rootFound = false;
-	bool indexFound = false;
 
 	while (std::getline(file, line)) {
-		int	indexBS = 0;
 		line = trim(stripComment(line));
 		if (line.empty())
 			continue;
@@ -141,108 +104,116 @@ void Config::ParseServerBlock(std::ifstream& file) {
 		if (line == "}")
 			break;
 
-		if (line[line.size() - 1] != ';')
-			throw std::runtime_error("Error: missing ';' in server block: '" + line + "'");
+		if (line.find("location") == 0) {
+			Location loc;
+			size_t start = 8; // "location"
 
-		line = trim(line.substr(0, line.size() - 1));
-		std::stringstream ss(line);
-		std::string key;
-		ss >> key;
-		if (key == "allow_methods") {
-			std::string method = parseSingleValue(line, "allow_methods");
-			if (method.empty())
-				throw std::runtime_error("Error: invalid methods directive syntax");
-			if (method == "PUT") 
-				server.PUT = true;
-			else if (method == "POST")
-				server.POST = true;
-			else if (method == "GET")
-				server.GET = true;
-			else
-				throw std::runtime_error("Error: unknown method in allow_methods: '" + method + "'");
-			std::cout << "Allowing primary methods: " << method << std::endl;
-		}
-		else if (key == "location") {
-			BlockServer bs(server, file);
-			server.bs[indexBS] = bs;
-			indexBS++;
-		}
-		else if (key == "listen") {
-			if (listenFound)
-				throw std::runtime_error("Error: duplicate listen directive in server block");
+			while (start < line.size() && (line[start] == ' ' || line[start] == '\t'))
+				++start;
 
-			std::stringstream listenStream(line);
-			std::string listenKeyword;
-			std::string listenValue;
-			listenStream >> listenKeyword;
-			listenStream >> listenValue;
+			size_t end = line.find("{", start);
+			if (end == std::string::npos)
+				end = line.size();
 
-			//check
-			if (listenValue.empty())
-				throw std::runtime_error("Error: listen directive requires a port");
-			//extra si il y a encore du text apres
-			std::string extra;
-			if (listenStream >> extra)
-				throw std::runtime_error("Error: invalid listen directive syntax");
+			loc.path = trim(line.substr(start, end - start));
 
-			//port
-			server.port = parsePort(listenValue);
-			listenFound = true;
+			if (line.find("{", start) == std::string::npos) {
+				if (!std::getline(file, line))
+					throw std::runtime_error("Error: expected '{' after location " + loc.path);
+				line = trim(stripComment(line));
+				if (line != "{")
+					throw std::runtime_error("Error: expected '{' after location " + loc.path);
+			}
+			ParseLocationBlock(file, loc);
+			server.locations.push_back(loc);
+			continue;
 		}
-		else if (key == "server_name") {
-			if (serverNameFound)
-				throw std::runtime_error("Error: duplicate server_name directive in server block");
-			//serverName
-			server.serverName = parseSingleValue(line, "server_name");
-			serverNameFound = true;
+
+		if (line.find("listen") == 0) {
+			std::string portStr = trim(line.substr(6));
+			int	port;
+			std::stringstream ss(portStr);
+			ss >> port;
+			server.port = port;
 		}
-		else if (key == "host") {
-			if (hostFound)
-				throw std::runtime_error("Error: duplicate host directive in server block");
-			//`server.host`
-			server.host = parseSingleValue(line, "host");
-			hostFound = true;
+		else if (line.find("server_name") == 0) {
+			server.serverName = trim(line.substr(11));
 		}
-		else if (key == "root") {
-			if (rootFound)
-				throw std::runtime_error("Error: duplicate root directive in server block");
-			//`server.root`
-			server.root = parseSingleValue(line, "root");
-			rootFound = true;
+		else if (line.find("root") == 0) {
+			server.root = trim(line.substr(4));
 		}
-		else if (key == "index") {
-			if (indexFound)
-				throw std::runtime_error("Error: duplicate index directive in server block");
-			//`server.index`
-			server.index = parseSingleValue(line, "index");
-			indexFound = true;
+		else if (line.find("index") == 0) {
+			server.index = trim(line.substr(5));
+		}
+		else if (line.find("client_max_body_size") == 0) {
+			std::string MaxBody = trim(line.substr(20));
+			int	body;
+			std::stringstream ss(MaxBody);
+			ss >> body;
+			server.max_body_size = body;
+		}
+		else if (line.find("error_page" == 0)) {
+			std::istringstream iss(line.substr(10));
+			int	code;
+			std::string path;
+			iss >> code >> path;
+			if (!path.empty() && path[path.size() - 1] == ';')
+				path = path.substr(0, path.size() - 1);
+			server.errorPages[code] = path;
 		}
 		else {
-			throw std::runtime_error("Error: unknown directive in server block: '" + key + "'");
+			throw std::runtime_error("Error: unknown directive in server block: '" + line + "'");
 		}
 	}
-
-
-/*___________________________________*/
-	   //Check list de Variables
-
-	   //TODO stocker les fuckings regle
-	   //TODO voir pour un switch case trop de if else
-
-	if (!listenFound)
-		throw std::runtime_error("Error: missing listen directive in server block");
-	if (!serverNameFound)
-		throw std::runtime_error("Error: missing server_name directive in server block");
-	if (!hostFound)
-		throw std::runtime_error("Error: missing host directive in server block");
-	if (server.port <= 0)
-		throw std::runtime_error("Error: invalid listen port");
-
-	if (file.eof() && line != "}") {
-		throw std::runtime_error("Error: missing closing '}' for server block");
-	}
-	checkListValueDebug(server);
 	_servers.push_back(server);
+}
+
+void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
+	std::string line;
+
+	while (std::getline(file, line)) {
+		line = trim(stripComment(line));
+		if (line.empty())
+			continue;
+
+		if (line == "}")
+			break;
+
+		if (line.find("allowed_methods") == 0) {
+			std::string methodsStr = trim(line.substr(15));
+			std::istringstream iss(methodsStr);
+			std::string method;
+			while (iss >> method) {
+				if (!method.empty() && method[method.size() - 1] == ';')
+					method = method.substr(0, method.size() - 1);
+				if (method == "GET")
+					loc.allowGet = true;
+				else if (method == "POST")
+					loc.allowPost = true;
+				else if (method == "DELETE")
+					loc.allowDelete = true;
+			}
+		} 
+		else if (line.find("autoindex") == 0) {
+			std::string val = trim(line.substr(9));
+			loc.autoindex = (val == "on");
+		}
+		else if (line.find("root") == 0) {
+			loc.root = trim(line.substr(4));
+		}
+		else if (line.find("index") == 0) {
+			loc.index = trim(line.substr(5));
+		}
+		else if (line.find("cgi_extension") == 0) {
+			loc.cgiExtension = trim(line.substr(13));
+		}
+		else if (line.find("cgi_path") == 0) {
+			loc.cgiPath = trim(line.substr(8));
+		}
+		else {
+			throw std::runtime_error("Error: unknown directive in location block: '" + line + "'");
+		}
+	}
 }
 
 /*

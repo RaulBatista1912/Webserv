@@ -1,0 +1,13 @@
+#pragma once
+#include <vector>
+#include <string>
+#include <fstream>
+#include <map>
+#include <iostream>
+#include <sstream>
+#include <netinet/in.h>
+#include <cstdlib>
+#include <stdexcept>
+#include <cctype>
+#include <unistd.h>
+#include <sys/socket.h>

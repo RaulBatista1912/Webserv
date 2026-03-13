@@ -1,6 +1,5 @@
 #pragma once
-
-#include <netinet/in.h>
+#include "Header.hpp"
 
 class Server {
     private:

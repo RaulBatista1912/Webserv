@@ -133,6 +133,7 @@ void Config::ParseServerBlock(std::ifstream& file) {
 	bool indexFound = false;
 
 	while (std::getline(file, line)) {
+		int	indexBS = 0;
 		line = trim(stripComment(line));
 		if (line.empty())
 			continue;
@@ -147,7 +148,26 @@ void Config::ParseServerBlock(std::ifstream& file) {
 		std::stringstream ss(line);
 		std::string key;
 		ss >> key;
-		if (key == "listen") {
+		if (key == "allow_methods") {
+			std::string method = parseSingleValue(line, "allow_methods");
+			if (method.empty())
+				throw std::runtime_error("Error: invalid methods directive syntax");
+			if (method == "PUT") 
+				server.PUT = true;
+			else if (method == "POST")
+				server.POST = true;
+			else if (method == "GET")
+				server.GET = true;
+			else
+				throw std::runtime_error("Error: unknown method in allow_methods: '" + method + "'");
+			std::cout << "Allowing primary methods: " << method << std::endl;
+		}
+		else if (key == "location") {
+			BlockServer bs(server, file);
+			server.bs[indexBS] = bs;
+			indexBS++;
+		}
+		else if (key == "listen") {
 			if (listenFound)
 				throw std::runtime_error("Error: duplicate listen directive in server block");
 

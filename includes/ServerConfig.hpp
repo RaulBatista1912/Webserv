@@ -1,11 +1,8 @@
 #pragma once
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <cstdlib>
-#include <stdexcept>
-#include <cctype>
+#include "Header.hpp"
+#include "BlockServer.hpp"
+
+class BlockServer;
 
 class ServerConfig {
     public:
@@ -14,10 +11,18 @@ class ServerConfig {
         std::string host;
         std::string root;
         std::string index;
+        bool        GET;
+        bool        PUT;
+        bool        POST;
+        BlockServer *bs;
 
         ServerConfig() : port(-1),
-                        serverName(""),
-                        host(""),
-                        root(""),
-                        index("") {}
+                        serverName("undefined"),
+                        host("undefined"),
+                        root("undefined"),
+                        index("undefined"),
+                        GET(false),
+                        PUT(false),
+                        POST(false),
+                        bs() {}
 };

@@ -41,7 +41,6 @@ bool Client::readFromSocket() {
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
 				//Trying to read the index.html file
-				std::cout << "Path: " << _request.getPath() << std::endl;
 				std::string path = _request.getPath();
 				if (path == "/")
 					path = "/index.html";

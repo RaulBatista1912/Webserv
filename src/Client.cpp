@@ -15,6 +15,8 @@ Client::~Client() {
 bool Client::readFromSocket() {
 	char buffer[4096];
 	Response res;
+	std::string body;
+	int status;
 	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
 
 	if (bytes <= 0)
@@ -23,8 +25,13 @@ bool Client::readFromSocket() {
 	size_t header_end = _readBuffer.find("\r\n\r\n");
 
 	if (header_end != std::string::npos) {
-		if (!_request.parse(_readBuffer.substr(0, header_end + 4)))
-			return false;
+		if (!_request.parse(_readBuffer.substr(0, header_end + 4))) {
+			body = "<h1>400 Bad Request</h1>";
+			status = 400;
+			_writeBuffer = res.buildResponse(body);
+			_state = WRITING;
+			return true;
+		}
 		std::map<std::string, std::string> headers = _request.getHeaders();
 		size_t body_len = 0;
 		if (headers.count("Content-Length"))
@@ -44,22 +51,23 @@ bool Client::readFromSocket() {
 				std::string path = _request.getPath();
 				if (path == "/")
 					path = "/index.html";
-				std::string file = "www" + path;
+				std::string file = "www" + path; // i have to handle in default_config file not here
 				std::cout << "Server is searching: " << file << std::endl;
 				std::ifstream webPage(file.c_str());
-				std::string body;
-				if (webPage)
-				{
+				if (webPage) {
 					std::string line;
 					while (std::getline(webPage, line))
 						body += line + "\n";
+					status = 200;
 				}
-				else
-					body = "404 Not Found Honey";
-				_writeBuffer = res.buildResponse(body);
-				_state = WRITING;
+				else {
+					body = "<h1>404 Not Found</h1>";
+					status = 404;
+				}
 			}
 		}
+		_writeBuffer = res.buildResponse(body);
+		_state = WRITING;
 	}
 	return true;
 }
@@ -80,7 +88,44 @@ bool Client::writeToSocket() {
 	return (true);
 }
 
-void    Client::setState(State s) {
+// std::string	Client::readFile(const std::string &file) {
+// 	std::ifstream webPage(file.c_str());
+// 	std::string body;
+// 	std::string line;
+
+// 	while (std::getline(webPage, line))
+// 		body += line + "\n";
+
+// 	return body;
+// }
+
+// void	Client::handleGet(Response &res) {
+// 	std::string path = _request.getPath();
+
+// 	if (path == "/")
+// 		path = "/index.html";
+
+// 	std::string file = "www" + path;
+
+// 	std::ifstream webPage(file.c_str());
+
+// 	std::string body;
+// 	int status;
+
+// 	if (webPage) {
+// 		body = readFile(file);
+// 		status = 200;
+// 	}
+// 	else {
+// 		body = "<h1>404 Not Found</h1>";
+// 		status = 404;
+// 	}
+
+// 	_writeBuffer = res.buildResponse(body);
+// 	_state = WRITING;
+// }
+
+void	Client::setState(State s) {
 	_state = s;
 }
 

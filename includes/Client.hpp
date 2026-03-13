@@ -23,6 +23,8 @@ class Client {
 		// Public methods
 		bool	readFromSocket();// read the client's request
 		bool	writeToSocket();// send the response to the client
+		// std::string readFile(const std::string &file);
+		// void Client::handleGet(Response &res);
 
 		// Getters Setters
 		void	setState(State s);

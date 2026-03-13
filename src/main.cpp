@@ -14,7 +14,7 @@ int main(int ac, char** av)
 		return 1;
 	}
 	try {
-		Config config(av[1]); 
+		Config config(av[1]);
 		const std::vector<ServerConfig>& serverConfigs = config.getServers();
 		std::vector<Server*> servers;
 		std::vector<pollfd> fds;
@@ -70,7 +70,7 @@ int main(int ac, char** av)
 				else if (fds[i].revents & (POLLIN | POLLOUT)) { // vrai si soit POLLIN, soit POLLOUT, soit les deux
 					Client* c = clients[fds[i].fd];
 					// lecture, si erreur -> on met en CLOSED
-					if ((fds[i].revents & POLLIN) && !c->readFromSocket())
+					if ((fds[i].revents & POLLIN) && !c->readFromSocket())// est-ce que la lecture du socket s'est bien passée ?
 						c->setState(Client::CLOSED);
 					// ecriture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLOUT) && !c->writeToSocket())

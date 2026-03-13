@@ -1,28 +1,21 @@
 #pragma once
 #include "Header.hpp"
-#include "BlockServer.hpp"
-
-class BlockServer;
+#include "Location.hpp"
 
 class ServerConfig {
     public:
         int         port;
         std::string serverName;
-        std::string host;
         std::string root;
         std::string index;
-        bool        GET;
-        bool        PUT;
-        bool        POST;
-        BlockServer *bs;
+		int	max_body_size;
+		std::map<int, std::string> errorPages;
 
-        ServerConfig() : port(-1),
-                        serverName("undefined"),
-                        host("undefined"),
-                        root("undefined"),
-                        index("undefined"),
-                        GET(false),
-                        PUT(false),
-                        POST(false),
-                        bs() {}
+		std::vector<Location> locations;
+
+		ServerConfig() : port(-1),
+						serverName("undefined"),
+						root("undefined"),
+						index("undefined"),
+						max_body_size(-1) {}
 };

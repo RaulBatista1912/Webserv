@@ -16,7 +16,7 @@ bool Client::readFromSocket() {
 	char buffer[4096];
 	Response res;
 	std::string body;
-	int status;
+	// int status;
 	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
 
 	if (bytes <= 0)
@@ -27,7 +27,7 @@ bool Client::readFromSocket() {
 	if (header_end != std::string::npos) {
 		if (!_request.parse(_readBuffer.substr(0, header_end + 4))) {
 			body = "<h1>400 Bad Request</h1>";
-			status = 400;
+			// status = 400;
 			_writeBuffer = res.buildResponse(body);
 			_state = WRITING;
 			return true;
@@ -58,11 +58,11 @@ bool Client::readFromSocket() {
 					std::string line;
 					while (std::getline(webPage, line))
 						body += line + "\n";
-					status = 200;
+					// status = 200;
 				}
 				else {
 					body = "<h1>404 Not Found</h1>";
-					status = 404;
+					// status = 404;
 				}
 			}
 		}

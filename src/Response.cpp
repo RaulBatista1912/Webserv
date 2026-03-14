@@ -8,7 +8,7 @@ std::string Response::buildResponse(std::string status, std::string body, std::s
 	std::stringstream ss;
 	ss << body.size();
 	std::string len = ss.str();
-	std::string response = "HTTP/1.1 " + status +"\r\n"
+	std::string response = "HTTP/1.1 " + status + "\r\n"
 			"Content-Length: "+ len +"\r\n"
 			"Connection: close\r\n"
 			"Content-Type: " + type +"\r\n"

@@ -68,7 +68,7 @@ void Config::ParseFile(const std::string& path) {
 			continue;
 
 		if (line == "server") {
-			waitingServerBody = true; 
+			waitingServerBody = true;
 			continue; // server found on continue
 		}
 

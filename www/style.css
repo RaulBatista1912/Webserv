@@ -1,12 +1,17 @@
 body {
-	margin: 0;
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	font-family: Arial, sans-serif;
-	background-color: #f5f5f5;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family:cursive;
+    color: #f2f2f2;
+    background:
+        radial-gradient(circle at 20% 20%, #1f1f1f 0%, transparent 40%),
+        radial-gradient(circle at 80% 0%, #2a2a2a 0%, transparent 35%),
+        linear-gradient(140deg, #050505 0%, #101010 45%, #181818 100%);
+    background-attachment: scroll;
 }
 
 h1 {
@@ -14,21 +19,7 @@ h1 {
 	margin-bottom: 20px;
 }
 
-.main-button {
-	padding: 10px 20px;
-	font-size: 16px;
-	border: none;
-	border-radius: 8px;
-	background-color: #222;
-	color: white;
-	cursor: pointer;
-	transition: background-color 0.2s ease;
-}
-
-.main-button:hover {
-	background-color: #444;
-}
-
 img {
+	image-orientation: initial;
 	width: 80%;
 }

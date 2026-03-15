@@ -4,7 +4,7 @@
 #include <cstring>
 #include <stdexcept>
 
-Server::Server(int port) : _fd(-1), _port(port) {
+Server::Server(int port,  const std::string& root) : _fd(-1), _port(port), _root(root) {
 	_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_fd < 0)
 		throw std::runtime_error("socket failed");
@@ -33,6 +33,9 @@ int Server::getFd() const {
 
 int Server::getPort() const {
 	return (_port);
+}
+const std::string& getRoot() const {
+	return (_root);
 }
 
 int Server::acceptClient() const {

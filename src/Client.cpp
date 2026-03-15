@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd) : _fd(fd), _state(READING) {
+Client::Client(int fd, std::string& root) : _fd(fd), _state(READING) _root(root){
 
 }
 
@@ -40,6 +40,7 @@ bool Client::readFromSocket() {
 			body_len = std::atoi(headers["Content-Length"].c_str());
 		if (_readBuffer.size() >= header_end + 4 + body_len) {
 			if (_request.parse(_readBuffer)) {
+				//debug
 				std::cout << "Method: " << _request.getMethod() << std::endl;
 				std::cout << "Path: " << _request.getPath() << std::endl;
 				std::cout << "Version: " << _request.getVersion() << std::endl;
@@ -49,7 +50,10 @@ bool Client::readFromSocket() {
 					std::cout << it->first << ": " << it->second << std::endl;
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
+				//end debug
 				//Trying to read the index.html file
+				// if (_request.getMethod() != "GET")
+				// 	405 Method Not Allowed
 				path = _request.getPath();
 				if (path == "/")
 					path = "/index.html";

@@ -152,7 +152,7 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			ss >> body;
 			server.max_body_size = body;
 		}
-		else if (line.find("error_page" == 0)) {
+		else if (line.find("error_page") == 0) {
 			std::istringstream iss(line.substr(10));
 			int	code;
 			std::string path;

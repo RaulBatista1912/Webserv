@@ -15,6 +15,7 @@ class Client {
 		std::string _readBuffer;// contain the client's http request
 		std::string _writeBuffer;// contain the server's response
 		Request _request;
+		std::string _root;
 
 	public:
 		Client(int fd); // open the connexion
@@ -23,8 +24,6 @@ class Client {
 		// Public methods
 		bool	readFromSocket();// read the client's request
 		bool	writeToSocket();// send the response to the client
-		// std::string readFile(const std::string &file);
-		// void Client::handleGet(Response &res);
 
 		// Getters Setters
 		void	setState(State s);

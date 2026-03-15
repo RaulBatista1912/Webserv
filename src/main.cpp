@@ -22,7 +22,8 @@ int main(int ac, char** av)
 
 		// creer un serveur pour chaque port,
 		for (size_t i = 0; i < serverConfigs.size(); ++i) {
-			Server* srv = new Server(serverConfigs[i].port);
+			Server* srv = new Server(serverConfigs[i].port, serverConfigs[i].root,
+				serverConfigs[i].index);
 			servers.push_back(srv);
 
 			pollfd p;
@@ -55,7 +56,8 @@ int main(int ac, char** av)
 				if (isServer && (fds[i].revents & POLLIN)) {
 					int clientFd = currentServer->acceptClient(); // on accepte
 					if (clientFd >= 0) {
-						Client* c = new Client(clientFd);
+						Client* c = new Client(clientFd, currentServer->getRoot(),
+							currentServer->getIndex());
 						clients[clientFd] = c;
 
 						pollfd p;

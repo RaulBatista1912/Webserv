@@ -15,10 +15,11 @@ class Client {
 		std::string _readBuffer;// contain the client's http request
 		std::string _writeBuffer;// contain the server's response
 		Request _request;
-		std::string _root;
+		const std::string _root;
+		const std::string _index;
 
 	public:
-		Client(int fd); // open the connexion
+		Client(int fd, const std::string& _root, const std::string& _index);// open the connexion
 		~Client();// close the connexion
 
 		// Public methods

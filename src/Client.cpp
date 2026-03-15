@@ -3,9 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, std::string& root) : _fd(fd), _state(READING) _root(root){
-
-}
+Client::Client(int fd, const std::string& root, const std::string& index): 
+_fd(fd), _state(READING), _root(root), _index(index){}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -14,10 +13,10 @@ Client::~Client() {
 
 std::string readFile(const std::string& path)
 {
-    std::ifstream file(path.c_str());
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+	std::ifstream file(path.c_str());
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
 }
 
 bool Client::readFromSocket() {
@@ -65,8 +64,8 @@ bool Client::readFromSocket() {
 				// 	405 Method Not Allowed
 				path = _request.getPath();
 				if (path == "/")
-					path = "/index.html";
-				std::string file = "www" + path; // i have to handle in default_config file not here
+					path = '/' + _index;
+				std::string file = _root + path; // i have to handle in default_config file not here
 				std::cout << "Server is searching: " << file << std::endl;
 				std::ifstream webPage(file.c_str(), std::ios::binary);
 				if (webPage) {

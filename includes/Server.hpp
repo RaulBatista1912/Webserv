@@ -6,13 +6,18 @@ class Server {
 		int _fd;// server's socket
 		int _port; // port where the server listens for incoming connections
 		std::string _root;
+		std::string _index;
 	public:
-		Server(int port);
+		Server(int port, const std::string& root, const std::string& index);
 		~Server();
 
+		// Getters Setters
 		int getFd() const;
 		int getPort() const;
 		const std::string& getRoot() const;
+		const std::string& getIndex() const;
+
+		// Public methods
 		int acceptClient() const;
 };
 //Goal: To listen the incoming connections

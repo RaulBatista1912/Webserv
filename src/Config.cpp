@@ -139,11 +139,10 @@ void Config::ParseServerBlock(std::ifstream& file) {
 		else if (line.find("server_name") == 0) {
 			server.serverName = trim(line.substr(11));
 		}
-		else if (line.find("root") == 0) {
-			server.root = trim(line.substr(4));
-		}
+		else if (line.find("root") == 0)
+			server.root = removeSemicolon(line.substr(4));
 		else if (line.find("index") == 0) {
-			server.index = trim(line.substr(5));
+			server.index = removeSemicolon(line.substr(5));
 		}
 		else if (line.find("client_max_body_size") == 0) {
 			std::string MaxBody = trim(line.substr(20));
@@ -152,7 +151,7 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			ss >> body;
 			server.max_body_size = body;
 		}
-		else if (line.find("error_page" == 0)) {
+		else if (line.find("error_page") == 0) {
 			std::istringstream iss(line.substr(10));
 			int	code;
 			std::string path;
@@ -216,6 +215,12 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 	}
 }
 
+std::string removeSemicolon(std::string value) {
+	value = trim(value);
+	if (!value.empty() && value[value.size() - 1] == ';')
+		value.erase(value.size() - 1);
+	return value;
+}
 /*
                  *       +
            '                  |

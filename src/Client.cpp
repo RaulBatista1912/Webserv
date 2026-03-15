@@ -3,9 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd) : _fd(fd), _state(READING) {
-
-}
+Client::Client(int fd, const std::string& root, const std::string& index): 
+_fd(fd), _state(READING), _root(root), _index(index){}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -14,10 +13,10 @@ Client::~Client() {
 
 std::string readFile(const std::string& path)
 {
-    std::ifstream file(path.c_str());
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+	std::ifstream file(path.c_str());
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
 }
 
 bool Client::readFromSocket() {
@@ -49,6 +48,7 @@ bool Client::readFromSocket() {
 			body_len = std::atoi(headers["Content-Length"].c_str());
 		if (_readBuffer.size() >= header_end + 4 + body_len) {
 			if (_request.parse(_readBuffer)) {
+				//debug
 				std::cout << "Method: " << _request.getMethod() << std::endl;
 				std::cout << "Path: " << _request.getPath() << std::endl;
 				std::cout << "Version: " << _request.getVersion() << std::endl;
@@ -58,11 +58,14 @@ bool Client::readFromSocket() {
 					std::cout << it->first << ": " << it->second << std::endl;
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
+				//end debug
 				//Trying to read the index.html file
+				// if (_request.getMethod() != "GET")
+				// 	405 Method Not Allowed
 				path = _request.getPath();
 				if (path == "/")
-					path = "/index.html";
-				std::string file = "www" + path; // i have to handle in default_config file not here
+					path = '/' + _index;
+				std::string file = _root + path; // i have to handle in default_config file not here
 				std::cout << "Server is searching: " << file << std::endl;
 				std::ifstream webPage(file.c_str(), std::ios::binary);
 				if (webPage) {

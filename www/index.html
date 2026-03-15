@@ -3,21 +3,38 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>glurp</title>
+	<title>ServWeb</title>
 	<link rel="icon" type="image/gif" href="images/glorp-slam.gif">
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
-	<h1>ptn</h1>
-	<img src="images/rat.jpg" alt="">
-	<form action="/" method="post">
-		<label for="glo">glorp ?</label>
-		<input type="text" id="glo" name="glo"><br><br>
-		<button type="submit">POST</button>
-		<button type="submit" formmethod="get">GET</button>
-	</form>
-	<button>dede</button>
-	<a href="/images/rat.jpg" download>
-	<button type="button">Download rat</button>
+	<header class="site-header">
+		<h1>Webserv</h1>
+		<p class="subtitle"> Serveur en Snus </p>
+	</header>
+	<main class="container">
+		<section class="card">
+			<img src="images/rat.jpg" alt="chips" class="hero-image">
+			<form action="/" method="post" class="glorp-form">
+				<label for="glo">glorp ?</label>
+			<input 
+				type="text"
+				id="glo"
+				name="glo"
+				placeholder="ékri frr"
+				required
+			>
+			<div class="actions">
+				<button type="submit" class="main-button">POST</button>
+				<button type="submit" formmethod="get" class="main-button secondary">GET</button>
+			</div>
+		</form>
+			<div class="extra-actions">
+				<button type="button" class="main-button secondary">dede</button>
+            	<a href="/images/rat.jpg" download class="main-button link-button">Download rat</a>
+			</div>
+		</section>
+	</main>
+	<script src="app.js"></script>
 </body>
 </html>

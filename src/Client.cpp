@@ -12,13 +12,21 @@ Client::~Client() {
 		close(_fd);
 }
 
+std::string readFile(const std::string& path)
+{
+    std::ifstream file(path.c_str());
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
 bool Client::readFromSocket() {
 	char buffer[4096];
 	Response res;
 	std::string body;
 	std::string path;
-	std::string status;
-	std::string contentType;
+	std::string status = "200 OK";
+	std::string contentType = "text/html";
 	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
 
 	if (bytes <= 0)
@@ -30,7 +38,8 @@ bool Client::readFromSocket() {
 		if (!_request.parse(_readBuffer.substr(0, header_end + 4))) {
 			body = "<h1>400 Bad Request</h1>";
 			status = "400 Bad Request";
-			_writeBuffer = res.buildResponse(status, body, getContentType(_request.getPath()));
+			contentType = "text/html";
+			_writeBuffer = res.buildResponse(status, body, contentType);
 			_state = WRITING;
 			return true;
 		}
@@ -65,14 +74,18 @@ bool Client::readFromSocket() {
 					buffer << webPage.rdbuf();
 					body = buffer.str();
 					status = "200 OK";
+					contentType = getContentType(path);
 				}
 				else {
-					body = "<h1>404 Not Found</h1>";
+					body = readFile("www/error_page/404.html");
+					if (body.empty())
+						body = "<h1>The requested page does not exist.</h1>";
 					status = "404 Not Found";
+					contentType = "text/html";
 				}
 			}
 		}
-		_writeBuffer = res.buildResponse(status, body, getContentType(path));
+		_writeBuffer = res.buildResponse(status, body, contentType);
 		_state = WRITING;
 	}
 	return true;

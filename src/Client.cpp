@@ -59,13 +59,29 @@ bool Client::readFromSocket() {
 
 				std::cout << "Body: " << _request.getBody() << std::endl;
 				//end debug
-				//Trying to read the index.html file
-				// if (_request.getMethod() != "GET")
-				// 	405 Method Not Allowed
+				//Trying to execute the request
+				if (_request.getMethod() != "GET" && _request.getMethod() != "POST")
+				{
+					body = "<h1>405 Method Not Allowed</h1>";
+					status = "405 Method Not Allowed";
+					contentType = "text/html";
+					_writeBuffer = res.buildResponse(status, body, contentType);
+					_state = WRITING;
+					return true;
+				}
 				path = _request.getPath();
+				if (path.find("..") != std::string::npos)
+				{
+					body = "<h1>403 Forbidden</h1>";
+					status = "403 Forbidden";
+					contentType = "text/html";
+					_writeBuffer = res.buildResponse(status, body, contentType);
+					_state = WRITING;
+					return true;
+				}
 				if (path == "/")
 					path = '/' + _index;
-				std::string file = _root + path; // i have to handle in default_config file not here
+				std::string file = _root + path;
 				std::cout << "Server is searching: " << file << std::endl;
 				std::ifstream webPage(file.c_str(), std::ios::binary);
 				if (webPage) {

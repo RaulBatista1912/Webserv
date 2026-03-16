@@ -22,6 +22,12 @@ bool Request::parse(const std::string& Request) {
     if (!(firstLine >> _method >> _path >> _version))
         return false;
 
+    size_t queryPos = _path.find('?');
+    if (queryPos != std::string::npos)
+        _path = _path.substr(0, queryPos);
+    // else
+    //     _path = _path;
+
     while(std::getline(ss, line)) {
         if (line == "\r" || line == "")
             break;

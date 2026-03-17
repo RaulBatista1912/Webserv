@@ -2,6 +2,12 @@
 #include "Header.hpp"
 #include "Request.hpp"
 
+struct HttpResult {
+	std::string body;
+	std::string status;
+	std::string contentType;
+};
+
 class Client {
 	public:
 		enum State {
@@ -10,10 +16,10 @@ class Client {
 			CLOSED
 		};
 	private:
-		int _fd; // refers to the client's socket
-		State _state;// the current state of the connexion
-		std::string _readBuffer;// contain the client's http request
-		std::string _writeBuffer;// contain the server's response
+		int _fd;					// refers to the client's socket
+		State _state;				// the current state of the connexion
+		std::string _readBuffer;	// contain the client's http request
+		std::string _writeBuffer;	// contain the server's response
 		Request _request;
 		const std::string _root;
 		const std::string _index;
@@ -23,8 +29,11 @@ class Client {
 		~Client();// close the connexion
 
 		// Public methods
-		bool	readFromSocket();// read the client's request
-		bool	writeToSocket();// send the response to the client
+		bool		readFromSocket();	// read the client's request
+		bool		writeToSocket();	// send the response to the client
+		std::string	handleRequest();
+		HttpResult	handleGET();
+		void 		debugRequest(const std::string &file);
 
 		// Getters Setters
 		void	setState(State s);

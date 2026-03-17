@@ -65,7 +65,6 @@ int main(int ac, char** av)
 						p.events = POLLIN;
 						p.revents = 0;
 						fds.push_back(p);
-						std::cout << "New client fd=" << clientFd << std::endl; // on afficher le fd du nouveau client
 					}
 				}
 				// socket client, lire ou ecrire avec le client

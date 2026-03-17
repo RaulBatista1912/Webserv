@@ -11,82 +11,109 @@ Client::~Client() {
 		close(_fd);
 }
 
-std::string readFile(const std::string& path)
-{
+// Public methods
+std::string readFile(const std::string& path) {
 	std::ifstream file(path.c_str());
 	std::stringstream buffer;
 	buffer << file.rdbuf();
 	return buffer.str();
 }
 
+
+HttpResult Client::handleGET() {
+	HttpResult r;
+	std::string file;
+	std::string path = _request.getPath();
+
+	if (path.find("..") != std::string::npos) {
+		r.body = "<h1>403 Forbidden</h1>";
+		r.status = "403 Forbidden";
+		r.contentType = "text/html";
+		return r;
+	}
+	if (path == "/")
+		path = "/" + _index;
+	file = _root + path;
+	//debug
+	debugRequest(file);
+	std::ifstream webPage(file.c_str(), std::ios::binary);
+	if (webPage) {
+		std::stringstream buffer;
+		buffer << webPage.rdbuf();
+		r.body = buffer.str();
+		r.status = "200 OK";
+		r.contentType = getContentType(path);
+	} else {
+		r.body = readFile("www/error_page/404.html");
+		if (r.body.empty())
+			r.body = "<h1>404 Not Found</h1>";
+		r.status = "404 Not Found";
+		r.contentType = "text/html";
+	}
+	return r;
+}
+
+
+std::string Client::handleRequest() {
+	Response res;
+	HttpResult r;
+
+	std::string method = _request.getMethod();
+
+	if (method == "GET")
+		r = handleGET();
+	else if (method == "POST") {
+		r.body = "<h1>POST not implemented yet</h1>";
+		r.status = "405 Method Not Allowed";
+		r.contentType = "text/html";
+	}
+	else if (method == "DELETE") {
+		r.body = "<h1>DELETE not implemented yet</h1>";
+		r.status = "405 Method Not Allowed";
+		r.contentType = "text/html";
+	}
+	else {
+		r.body = "<h1>405 Method Not Allowed</h1>";
+		r.status = "405 Method Not Allowed";
+		r.contentType = "text/html";
+	}
+	return res.buildResponse(r.status, r.body, r.contentType);
+}
+
+
 bool Client::readFromSocket() {
 	char buffer[4096];
-	Response res;
-	std::string body;
-	std::string path;
-	std::string status = "200 OK";
-	std::string contentType = "text/html";
-	int bytes = recv(_fd, buffer, 4096, 0); // receive the client's request maybe in piece(oui)
+	int bytes = recv(_fd, buffer, sizeof(buffer), 0);
 
 	if (bytes <= 0)
 		return false;
+
 	_readBuffer.append(buffer, bytes);
+
 	size_t header_end = _readBuffer.find("\r\n\r\n");
+	if (header_end == std::string::npos)
+		return true;
 
-	if (header_end != std::string::npos) {
-		if (!_request.parse(_readBuffer.substr(0, header_end + 4))) {
-			body = "<h1>400 Bad Request</h1>";
-			status = "400 Bad Request";
-			contentType = "text/html";
-			_writeBuffer = res.buildResponse(status, body, contentType);
-			_state = WRITING;
-			return true;
-		}
-		std::map<std::string, std::string> headers = _request.getHeaders();
-		size_t body_len = 0;
-		if (headers.count("Content-Length"))
-			body_len = std::atoi(headers["Content-Length"].c_str());
-		if (_readBuffer.size() >= header_end + 4 + body_len) {
-			if (_request.parse(_readBuffer)) {
-				//debug
-				std::cout << "Method: " << _request.getMethod() << std::endl;
-				std::cout << "Path: " << _request.getPath() << std::endl;
-				std::cout << "Version: " << _request.getVersion() << std::endl;
+	size_t body_len = 0;
+	std::string headers = _readBuffer.substr(0, header_end + 4);
+	std::map<std::string, std::string> h = _request.extractHeaders(headers);
 
-				std::map<std::string, std::string> headers = _request.getHeaders();
-				for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
-					std::cout << it->first << ": " << it->second << std::endl;
+	if (h.count("Content-Length"))
+		body_len = std::atoi(h["Content-Length"].c_str());
 
-				std::cout << "Body: " << _request.getBody() << std::endl;
-				//end debug
-				//Trying to read the index.html file
-				// if (_request.getMethod() != "GET")
-				// 	405 Method Not Allowed
-				path = _request.getPath();
-				if (path == "/")
-					path = '/' + _index;
-				std::string file = _root + path; // i have to handle in default_config file not here
-				std::cout << "Server is searching: " << file << std::endl;
-				std::ifstream webPage(file.c_str(), std::ios::binary);
-				if (webPage) {
-					std::stringstream buffer;
-					buffer << webPage.rdbuf();
-					body = buffer.str();
-					status = "200 OK";
-					contentType = getContentType(path);
-				}
-				else {
-					body = readFile("www/error_page/404.html");
-					if (body.empty())
-						body = "<h1>The requested page does not exist.</h1>";
-					status = "404 Not Found";
-					contentType = "text/html";
-				}
-			}
-		}
-		_writeBuffer = res.buildResponse(status, body, contentType);
+	if (_readBuffer.size() < header_end + 4 + body_len)
+		return true;
+
+	if (!_request.parse(_readBuffer)) {
+		Response res;
+		_writeBuffer = res.buildResponse("400 Bad Request",
+										"<h1>400 Bad Request</h1>",
+										"text/html");
 		_state = WRITING;
+		return true;
 	}
+	_writeBuffer = handleRequest();
+	_state = WRITING;
 	return true;
 }
 
@@ -106,6 +133,30 @@ bool Client::writeToSocket() {
 	return (true);
 }
 
+void Client::debugRequest(const std::string &file) {
+	std::cout << "----- DEBUG REQUEST -----" << std::endl;
+
+	std::cout << "New client fd=" << _fd << std::endl;
+	std::cout << "Method:  " << _request.getMethod() << std::endl;
+	std::cout << "Path:    " << _request.getPath() << std::endl;
+	std::cout << "Version: " << _request.getVersion() << std::endl;
+
+	std::cout << "\nHeaders:" << std::endl;
+	std::map<std::string, std::string> headers = _request.getHeaders();
+	for (std::map<std::string, std::string>::iterator it = headers.begin();
+		it != headers.end(); ++it)
+	{
+		std::cout << "  " << it->first << ": " << it->second << std::endl;
+	}
+
+	std::cout << "\nBody:" << std::endl;
+	std::cout << _request.getBody() << std::endl;
+
+	std::cout << "\nServer is searching: " << file << std::endl;
+	std::cout << "----------END REQUEST---------------\n" << std::endl;
+}
+
+// Getters Setters
 void	Client::setState(State s) {
 	_state = s;
 }

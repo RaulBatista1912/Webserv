@@ -19,6 +19,43 @@ std::string readFile(const std::string& path) {
 	return buffer.str();
 }
 
+HttpResult Client::handlePOST() {
+	HttpResult r;
+
+	// 1. Récupérer le body
+	std::string body = _request.getBody();
+
+	// 2. Construire le chemin du fichier
+	std::string path = _root + _request.getPath();
+
+	// 3. Sécurité basique
+	if (path.find("..") != std::string::npos) {
+		r.status = "403 Forbidden";
+		r.body = "<h1>403 Forbidden</h1>";
+		r.contentType = "text/html";
+		return r;
+	}
+
+	// 4. Ouvrir le fichier en écriture
+	std::ofstream out(path.c_str(), std::ios::binary);
+	if (!out) {
+		r.status = "500 Internal Server Error";
+		r.body = "<h1>500 Internal Server Error</h1>";
+		r.contentType = "text/html";
+		return r;
+	}
+
+	// 5. Écrire le body
+	out.write(body.c_str(), body.size());
+	out.close();
+
+	// 6. Réponse
+	r.status = "201 Created";
+	r.body = "<h1>File uploaded</h1>";
+	r.contentType = "text/html";
+	return r;
+}
+
 
 HttpResult Client::handleGET() {
 	HttpResult r;
@@ -57,16 +94,12 @@ HttpResult Client::handleGET() {
 std::string Client::handleRequest() {
 	Response res;
 	HttpResult r;
-
 	std::string method = _request.getMethod();
 
 	if (method == "GET")
 		r = handleGET();
-	else if (method == "POST") {
-		r.body = "<h1>POST not implemented yet</h1>";
-		r.status = "405 Method Not Allowed";
-		r.contentType = "text/html";
-	}
+	else if (method == "POST")
+		r = handlePOST();
 	else if (method == "DELETE") {
 		r.body = "<h1>DELETE not implemented yet</h1>";
 		r.status = "405 Method Not Allowed";
@@ -87,23 +120,17 @@ bool Client::readFromSocket() {
 
 	if (bytes <= 0)
 		return false;
-
 	_readBuffer.append(buffer, bytes);
-
 	size_t header_end = _readBuffer.find("\r\n\r\n");
 	if (header_end == std::string::npos)
 		return true;
-
 	size_t body_len = 0;
 	std::string headers = _readBuffer.substr(0, header_end + 4);
 	std::map<std::string, std::string> h = _request.extractHeaders(headers);
-
 	if (h.count("Content-Length"))
 		body_len = std::atoi(h["Content-Length"].c_str());
-
 	if (_readBuffer.size() < header_end + 4 + body_len)
 		return true;
-
 	if (!_request.parse(_readBuffer)) {
 		Response res;
 		_writeBuffer = res.buildResponse("400 Bad Request",

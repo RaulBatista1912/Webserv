@@ -78,3 +78,10 @@ IP ​​Address: Identifies the machine on the network.
 Port Number: Identifies the specific application or process on that machine.
 Protocol: Usually TCP (connection-oriented, reliable) or UDP (connectionless, fast).
 
+# Commands
+
+test GET: curl -X GET http://localhost:8080/../default.conf
+
+test GET security: curl --path-as-is http://localhost:8080/../default.conf
+
+test POST: curl -X POST -d "hello"

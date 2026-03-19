@@ -33,6 +33,7 @@ class Client {
 		bool		writeToSocket();	// send the response to the client
 		std::string	handleRequest();
 		HttpResult	handleGET();
+		HttpResult	handlePOST();
 		void 		debugRequest(const std::string &file);
 
 		// Getters Setters

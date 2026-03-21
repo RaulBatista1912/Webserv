@@ -19,23 +19,35 @@ std::string readFile(const std::string& path) {
 	return buffer.str();
 }
 
+bool isDirectory(const std::string &path) {
+	struct stat st;
+	if (stat(path.c_str(), &st) == -1)
+		return false;
+	return S_ISDIR(st.st_mode);
+}
+
 HttpResult Client::handlePOST() {
 	HttpResult r;
 
 	// 1. Récupérer le body
 	std::string body = _request.getBody();
+	std::string value;
 
+	size_t pos = body.find('=');
+	if (pos != std::string::npos)
+		value = body.substr(pos + 1);
 	// 2. Construire le chemin du fichier
 	std::string path = _root + _request.getPath();
 
+	//debug
+	debugRequest(path);
 	// 3. Sécurité basique
-	if (path.find("..") != std::string::npos) {
+	if (path.find("..") != std::string::npos || !isDirectory(path)) {
 		r.status = "403 Forbidden";
 		r.body = "<h1>403 Forbidden</h1>";
 		r.contentType = "text/html";
 		return r;
 	}
-
 	// 4. Ouvrir le fichier en écriture
 	std::ofstream out(path.c_str(), std::ios::binary);
 	if (!out) {
@@ -46,7 +58,7 @@ HttpResult Client::handlePOST() {
 	}
 
 	// 5. Écrire le body
-	out.write(body.c_str(), body.size());
+	out.write(value.c_str(), value.size());
 	out.close();
 
 	// 6. Réponse
@@ -59,7 +71,7 @@ HttpResult Client::handlePOST() {
 
 HttpResult Client::handleGET() {
 	HttpResult r;
-	std::string file;
+	std::string completePath;
 	std::string path = _request.getPath();
 
 	if (path.find("..") != std::string::npos) {
@@ -70,10 +82,10 @@ HttpResult Client::handleGET() {
 	}
 	if (path == "/")
 		path = "/" + _index;
-	file = _root + path;
+	completePath = _root + path;
 	//debug
-	debugRequest(file);
-	std::ifstream webPage(file.c_str(), std::ios::binary);
+	debugRequest(completePath);
+	std::ifstream webPage(completePath.c_str(), std::ios::binary);
 	if (webPage) {
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();

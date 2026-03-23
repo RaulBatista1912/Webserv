@@ -15,23 +15,29 @@
 	<main class="container">
 		<section class="card">
 			<img src="images/rat.jpg" alt="chips" class="hero-image">
+			<!--POST TEXT--------->
 			<form action="/test.txt" method="post" class="glorp-form">
-				<label for="glo">glorp ?</label>
-			<input 
-				type="text"
-				id="glo"
-				name="glo"
-				placeholder="ékri frr"
-				required
-			>
-			<div class="actions">
-				<button type="submit" class="main-button">POST</button>
-				<button type="submit" formmethod="get" formaction="/index.html" class="main-button secondary">GET</button>
-			</div>
-		</form>
+					<label for="glo">glorp ?</label>
+				<input 
+					type="text"
+					id="glo"
+					name="glo"
+					placeholder="ékri frr"
+					required
+				>
+				<div class="actions">
+					<button type="submit" class="main-button">POST</button>
+					<button type="submit" formmethod="get" formaction="/index.html" class="main-button secondary">GET</button>
+				</div>
+			</form>
+			<!--UPLOAD FILES------->
+			<form action="/upload" method="post" enctype="multipart/form-data" class="glorp-form">
+				<input type="file" name="file">
+				<button type="submit" class="main-button">Upload</button>
+			</form>
 			<div class="extra-actions">
 				<button type="button" class="main-button secondary">dede</button>
-            	<a href="/images/rat.jpg" download class="main-button link-button">Download rat</a>
+				<a href="/images/rat.jpg" download class="main-button link-button">Download rat</a>
 			</div>
 			<a href="http://www.savewalterwhite.com/" target="_blank" rel="noopener noreferrer">
 				<button type="button" class="ww-button">Walter White</button>

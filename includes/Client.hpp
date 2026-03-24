@@ -34,6 +34,7 @@ class Client {
 		std::string	handleRequest();
 		HttpResult	handleGET();
 		HttpResult	handlePOST();
+		void		parse_boundary();
 		void 		debugRequest(const std::string &file);
 
 		// Getters Setters

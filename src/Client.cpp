@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, const std::string& root, const std::string& index): 
+Client::Client(int fd, const std::string& root, const std::string& index):
 _fd(fd), _state(READING), _root(root), _index(index){}
 
 Client::~Client() {
@@ -28,6 +28,48 @@ bool isDirectory(const std::string &path) {
 
 HttpResult Client::handlePOST() {
 	HttpResult r;
+
+	std::string contentType = _request.getHeader("Content-Type");
+
+	// 1) Vérifier si c'est un upload
+	if (contentType.find("multipart/form-data") != std::string::npos) {
+		std::string body = _request.getBody();
+
+		// 2) Récupérer le boundary
+		size_t pos = contentType.find("boundary=");
+		std::string boundary = "--" + contentType.substr(pos + 9);
+
+		// 3) Trouver la première partie
+		size_t start = body.find(boundary);
+		start += boundary.size() + 2;
+
+		// 4) Headers de la partie
+		size_t headerEnd = body.find("\r\n\r\n", start);
+		std::string headers = body.substr(start, headerEnd - start);
+
+		// 5) Extraire filename
+		std::string filename;
+		size_t fn = headers.find("filename=\"");
+		fn += 10;
+		size_t end = headers.find("\"", fn);
+		filename = headers.substr(fn, end - fn);
+
+		// 6) Extraire contenu du fichier
+		size_t fileStart = headerEnd + 4;
+		size_t fileEnd = body.find(boundary, fileStart) - 2;
+		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+
+		// 7) Écrire le fichier
+		std::string filepath = _root + "/uploads/" + filename;
+		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+		write(fd, fileContent.c_str(), fileContent.size());
+		close(fd);
+
+		r.status = "201 Created";
+		r.body = "<h1>File uploaded</h1>";
+		r.contentType = "text/html";
+		return r;
+	}
 
 	// 1. Récupérer le body
 	std::string body = _request.getBody();
@@ -63,11 +105,10 @@ HttpResult Client::handlePOST() {
 
 	// 6. Réponse
 	r.status = "201 Created";
-	r.body = "<h1>File uploaded</h1>";
+	r.body = "<h1>Message sent</h1>";
 	r.contentType = "text/html";
 	return r;
 }
-
 
 HttpResult Client::handleGET() {
 	HttpResult r;
@@ -101,7 +142,6 @@ HttpResult Client::handleGET() {
 	}
 	return r;
 }
-
 
 std::string Client::handleRequest() {
 	Response res;

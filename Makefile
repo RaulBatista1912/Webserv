@@ -16,7 +16,8 @@ SRC         = $(SRC_DIR)/main.cpp \
 				$(SRC_DIR)/Server.cpp \
 				$(SRC_DIR)/Request.cpp \
 				$(SRC_DIR)/Config.cpp \
-				$(SRC_DIR)/Response.cpp
+				$(SRC_DIR)/Response.cpp \
+				$(SRC_DIR)/ServerConfig.cpp
 
 OBJ         = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 

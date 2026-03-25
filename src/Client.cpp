@@ -1,10 +1,10 @@
 #include "../includes/Client.hpp"
 #include "../includes/Response.hpp"
+#include "../includes/ServerConfig.hpp"
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, const std::string& root, const std::string& index): 
-_fd(fd), _state(READING), _root(root), _index(index){}
+Client::Client(int fd, int port, Config& config) : _fd(fd), _port(port), _config(config){}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -56,37 +56,88 @@ HttpResult Client::handlePOST() {
 	return r;
 }
 
+const ServerConfig*	Client::findServer() const {
+	const std::vector<ServerConfig>& servers = _config.getServers();
 
-HttpResult Client::handleGET() {
+	const std::map<std::string, std::string>& headers = _request.getHeaders();
+
+	std::map<std::string, std::string>::const_iterator it = headers.find("Host");
+
+	if (it == headers.end() || it->second.empty())
+		return &servers[0];
+
+	std::string host = it->second;
+
+	for (size_t i = 0; i < servers.size(); ++i) {
+		const ServerConfig& s = servers[i];
+
+		if (s.port != _port)
+			continue;
+		if (!s.serverName.empty()) {
+			if (host.find(s.serverName) != std::string::npos)
+				return &s;
+		}
+		else
+			return &s;
+	}
+	return &servers[0];
+}
+
+std::string	Client::readErrorPage(const ServerConfig& server, int code) {
+	std::map<int, std::string>::const_iterator it = server.errorPages.find(code);
+
+	if (it != server.errorPages.end()) {
+		std::string filePath = server.root + "/" + it->second;
+
+		std::ifstream file(filePath.c_str(), std::ios::binary);
+		if (file) {
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			return buffer.str();
+		}
+	}
+	return "<h1>Error</h1>";
+}
+
+HttpResult Client::handleError(const ServerConfig* server, int code, std::string err) {
 	HttpResult r;
-	std::string file;
-	std::string path = _request.getPath();
+
+	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
+		r.body = readErrorPage(*server, code);
+	else
+		r.body = "<h1>" + err + "<h1>";
+	r.status = err;
+	return r;
+}
+
+HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
+	HttpResult r;
 
 	if (path.find("..") != std::string::npos) {
-		r.body = "<h1>403 Forbidden</h1>";
-		r.status = "403 Forbidden";
-		r.contentType = "text/html";
+		r = handleError(server, 403, "403 Forbidden");
 		return r;
 	}
+
+	if (loc && !loc->allowGet) {
+		r = handleError(server, 405, "405 Method Not Allowed");
+		return r;
+	}
+
 	if (path == "/")
-		path = "/" + _index;
-	file = _root + path;
-	//debug
-	debugRequest(file);
+		path = "/" + server->index;
+	std::string file = server->root + path;
+
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
+		std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
 		r.body = buffer.str();
 		r.status = "200 OK";
 		r.contentType = getContentType(path);
-	} else {
-		r.body = readFile("www/error_page/404.html");
-		if (r.body.empty())
-			r.body = "<h1>404 Not Found</h1>";
-		r.status = "404 Not Found";
-		r.contentType = "text/html";
 	}
+	else
+		r = handleError(server, 404, "404 Not Found");
 	return r;
 }
 
@@ -95,21 +146,18 @@ std::string Client::handleRequest() {
 	Response res;
 	HttpResult r;
 	std::string method = _request.getMethod();
+	std::string path = _request.getPath();
+	const ServerConfig* server = findServer();
+	const Location* loc = server->findLocation(path);
 
 	if (method == "GET")
-		r = handleGET();
+		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST();
-	else if (method == "DELETE") {
-		r.body = "<h1>DELETE not implemented yet</h1>";
-		r.status = "405 Method Not Allowed";
-		r.contentType = "text/html";
-	}
-	else {
-		r.body = "<h1>405 Method Not Allowed</h1>";
-		r.status = "405 Method Not Allowed";
-		r.contentType = "text/html";
-	}
+	else if (method == "DELETE")
+		r = handleError(server, 501, "501 Not Implemented");
+	else
+		r = handleError(server, 501, "501 Not Implemented");
 	return res.buildResponse(r.status, r.body, r.contentType);
 }
 
@@ -208,5 +256,7 @@ std::string getContentType(const std::string &path)
 		return "image/png";
 	if (path.find(".jpg") != std::string::npos)
 		return "image/jpeg";
+	if (path.find(".gif") != std::string::npos)
+		return "image/gif";
 	return "text/plain";
 }

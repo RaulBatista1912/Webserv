@@ -26,107 +26,167 @@ bool isDirectory(const std::string &path) {
 	return S_ISDIR(st.st_mode);
 }
 
-HttpResult Client::handlePOST() {
-	HttpResult r;
+// std::string contentType = _request.getHeader("Content-Type");
+// 	std::cout << "Content-Type = " << contentType << std::endl;
 
-	std::string contentType = _request.getHeader("Content-Type");
-	std::cout << "Content-Type = " << contentType << std::endl;
+// 	// 1) Vérifier si c'est un upload
+// 	if (contentType.find("multipart/form-data") != std::string::npos) {
+// 		std::string body = _request.getBody();
 
-	// 1) Vérifier si c'est un upload
-	if (contentType.find("multipart/form-data") != std::string::npos) {
-		std::string body = _request.getBody();
+// 		// 2) Récupérer le boundary
+// 		size_t pos = contentType.find("boundary=");
+// 		std::string boundary = "--" + contentType.substr(pos + 9);
+// 		std::cout << "Boundary = [" << boundary << "]" << std::endl;
 
-		// 2) Récupérer le boundary
-		size_t pos = contentType.find("boundary=");
-		std::string boundary = "--" + contentType.substr(pos + 9);
-		std::cout << "Boundary = [" << boundary << "]" << std::endl;
+// 		// 3) Trouver la première partie
+// 		size_t start = body.find(boundary);
+// 		start += boundary.size() + 2;
 
-		// 3) Trouver la première partie
-		size_t start = body.find(boundary);
-		start += boundary.size() + 2;
+// 		// 4) Headers de la partie
+// 		size_t headerEnd = body.find("\r\n\r\n", start);
+// 		std::string headers = body.substr(start, headerEnd - start);
+// 		std::cout << "Body length = " << body.size() << std::endl;
 
-		// 4) Headers de la partie
-		size_t headerEnd = body.find("\r\n\r\n", start);
-		std::string headers = body.substr(start, headerEnd - start);
-		std::cout << "Body length = " << body.size() << std::endl;
+// 		// 5) Extraire filename
+// 		std::string filename;
+// 		size_t fn = headers.find("filename=\"");
+// 		fn += 10;
+// 		size_t end = headers.find("\"", fn);
+// 		filename = headers.substr(fn, end - fn);
 
-		// 5) Extraire filename
-		std::string filename;
-		size_t fn = headers.find("filename=\"");
-		fn += 10;
-		size_t end = headers.find("\"", fn);
-		filename = headers.substr(fn, end - fn);
+// 		// 6) Extraire contenu du fichier
+// 		size_t fileStart = headerEnd + 4;
+// 		size_t fileEnd = body.find(boundary, fileStart) - 2;
+// 		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+// 		std::cout << "File content size = " << fileContent.size() << std::endl;
 
-		// 6) Extraire contenu du fichier
-		size_t fileStart = headerEnd + 4;
-		size_t fileEnd = body.find(boundary, fileStart) - 2;
-		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
-		std::cout << "File content size = " << fileContent.size() << std::endl;
+// 		// 7) Écrire le fichier
+// 		std::string filepath = _root + "/upload/" + filename; // ne pas hardcoder mettre
+// 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+// 		if (fd < 0)
+// 		{
+// 			r.status = "404 Not Found";
+// 			r.body = "<h1>404 Not Found</h1>";
+// 			r.contentType = "text/html";
+// 			return r;
+// 		}
+// 		if (isDirectory(filepath))
+// 		{
+// 			r.status = "403 Forbidden";
+// 			r.body = "<h1>403 Forbidden</h1>";
+// 			r.contentType = "text/html";
+// 			return r;
+// 		}
+// 		write(fd, fileContent.c_str(), fileContent.size());
+// 		close(fd);
 
-		// 7) Écrire le fichier
-		std::string filepath = _root + "/upload/" + filename; // ne pas hardcoder mettre
-		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-		if (fd < 0)
-		{
-			r.status = "404 Not Found";
-			r.body = "<h1>404 Not Found</h1>";
-			r.contentType = "text/html";
-			return r;
-		}
-		if (isDirectory(filepath))
-		{
-			r.status = "403 Forbidden";
-			r.body = "<h1>403 Forbidden</h1>";
-			r.contentType = "text/html";
-			return r;
-		}
-		write(fd, fileContent.c_str(), fileContent.size());
-		close(fd);
+// 		r.status = "201 Created";
+// 		r.body = "<h1>File uploaded</h1>";
+// 		r.contentType = "text/html";
+// 		return r;
+// 	}
 
-		r.status = "201 Created";
-		r.body = "<h1>File uploaded</h1>";
-		r.contentType = "text/html";
-		return r;
-	}
+// HttpResult Client::handlePOST() {
+// 	HttpResult r;
 
-	// 1. Récupérer le body
-	std::string body = _request.getBody();
-	std::string value;
+// 	std::string contentType = _request.getHeader("Content-Type");
+// 	std::cout << "Content-Type = " << contentType << std::endl;
 
-	size_t pos = body.find('=');
-	if (pos != std::string::npos)
-		value = body.substr(pos + 1);
-	// 2. Construire le chemin du fichier
-	std::string path = _root + _request.getPath();
+// 	// 1) Vérifier si c'est un upload
+// 	if (contentType.find("multipart/form-data") != std::string::npos) {
+// 		std::string body = _request.getBody();
 
-	//debug
-	debugRequest(path);
-	// 3. Sécurité basique
-	if (path.find("..") != std::string::npos || !isDirectory(path)) {
-		r.status = "403 Forbidden";
-		r.body = "<h1>403 Forbidden</h1>";
-		r.contentType = "text/html";
-		return r;
-	}
-	// 4. Ouvrir le fichier en écriture
-	std::ofstream out(path.c_str(), std::ios::binary);
-	if (!out) {
-		r.status = "500 Internal Server Error";
-		r.body = "<h1>500 Internal Server Error</h1>";
-		r.contentType = "text/html";
-		return r;
-	}
+// 		// 2) Récupérer le boundary
+// 		size_t pos = contentType.find("boundary=");
+// 		std::string boundary = "--" + contentType.substr(pos + 9);
+// 		std::cout << "Boundary = [" << boundary << "]" << std::endl;
 
-	// 5. Écrire le body
-	out.write(value.c_str(), value.size());
-	out.close();
+// 		// 3) Trouver la première partie
+// 		size_t start = body.find(boundary);
+// 		start += boundary.size() + 2;
 
-	// 6. Réponse
-	r.status = "201 Created";
-	r.body = "<h1>Message sent</h1>";
-	r.contentType = "text/html";
-	return r;
-}
+// 		// 4) Headers de la partie
+// 		size_t headerEnd = body.find("\r\n\r\n", start);
+// 		std::string headers = body.substr(start, headerEnd - start);
+// 		std::cout << "Body length = " << body.size() << std::endl;
+
+// 		// 5) Extraire filename
+// 		std::string filename;
+// 		size_t fn = headers.find("filename=\"");
+// 		fn += 10;
+// 		size_t end = headers.find("\"", fn);
+// 		filename = headers.substr(fn, end - fn);
+
+// 		// 6) Extraire contenu du fichier
+// 		size_t fileStart = headerEnd + 4;
+// 		size_t fileEnd = body.find(boundary, fileStart) - 2;
+// 		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+// 		std::cout << "File content size = " << fileContent.size() << std::endl;
+
+// 		// 7) Écrire le fichier
+// 		std::string filepath = _root + "/upload/" + filename; // ne pas hardcoder mettre
+// 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+// 		if (fd < 0)
+// 		{
+// 			r.status = "404 Not Found";
+// 			r.body = "<h1>404 Not Found</h1>";
+// 			r.contentType = "text/html";
+// 			return r;
+// 		}
+// 		if (isDirectory(filepath))
+// 		{
+// 			r.status = "403 Forbidden";
+// 			r.body = "<h1>403 Forbidden</h1>";
+// 			r.contentType = "text/html";
+// 			return r;
+// 		}
+// 		write(fd, fileContent.c_str(), fileContent.size());
+// 		close(fd);
+
+// 		r.status = "201 Created";
+// 		r.body = "<h1>File uploaded</h1>";
+// 		r.contentType = "text/html";
+// 		return r;
+// 	}
+
+// 	// 1. Récupérer le body
+// 	std::string body = _request.getBody();
+// 	std::string value;
+
+// 	size_t pos = body.find('=');
+// 	if (pos != std::string::npos)
+// 		value = body.substr(pos + 1);
+// 	// 2. Construire le chemin du fichier
+// 	std::string path = _root + _request.getPath();
+
+// 	//debug
+// 	debugRequest(path);
+// 	// 3. Sécurité basique
+// 	if (path.find("..") != std::string::npos || !isDirectory(path)) {
+// 		r.status = "403 Forbidden";
+// 		r.body = "<h1>403 Forbidden</h1>";
+// 		r.contentType = "text/html";
+// 		return r;
+// 	}
+// 	// 4. Ouvrir le fichier en écriture
+// 	std::ofstream out(path.c_str(), std::ios::binary);
+// 	if (!out) {
+// 		r.status = "500 Internal Server Error";
+// 		r.body = "<h1>500 Internal Server Error</h1>";
+// 		r.contentType = "text/html";
+// 		return r;
+// 	}
+
+// 	// 5. Écrire le body
+// 	out.write(value.c_str(), value.size());
+// 	out.close();
+
+// 	// 6. Réponse
+// 	r.status = "201 Created";
+// 	r.body = "<h1>Message sent</h1>";
+// 	r.contentType = "text/html";
+// 	return r;
+// }
 
 HttpResult Client::handleGET() {
 	HttpResult r;

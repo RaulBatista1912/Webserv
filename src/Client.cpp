@@ -30,6 +30,7 @@ HttpResult Client::handlePOST() {
 	HttpResult r;
 
 	std::string contentType = _request.getHeader("Content-Type");
+	std::cout << "Content-Type = " << contentType << std::endl;
 
 	// 1) Vérifier si c'est un upload
 	if (contentType.find("multipart/form-data") != std::string::npos) {
@@ -38,6 +39,7 @@ HttpResult Client::handlePOST() {
 		// 2) Récupérer le boundary
 		size_t pos = contentType.find("boundary=");
 		std::string boundary = "--" + contentType.substr(pos + 9);
+		std::cout << "Boundary = [" << boundary << "]" << std::endl;
 
 		// 3) Trouver la première partie
 		size_t start = body.find(boundary);
@@ -46,6 +48,7 @@ HttpResult Client::handlePOST() {
 		// 4) Headers de la partie
 		size_t headerEnd = body.find("\r\n\r\n", start);
 		std::string headers = body.substr(start, headerEnd - start);
+		std::cout << "Body length = " << body.size() << std::endl;
 
 		// 5) Extraire filename
 		std::string filename;
@@ -58,10 +61,25 @@ HttpResult Client::handlePOST() {
 		size_t fileStart = headerEnd + 4;
 		size_t fileEnd = body.find(boundary, fileStart) - 2;
 		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+std::cout << "File content size = " << fileContent.size() << std::endl;
 
 		// 7) Écrire le fichier
-		std::string filepath = _root + "/uploads/" + filename;
+		std::string filepath = _root + "/blabla/" + filename;
 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+		if (fd < 0)
+		{
+			r.status = "404 Not Found";
+			r.body = "<h1>404 Not Found</h1>";
+			r.contentType = "text/html";
+			return r;
+		}
+		if (isDirectory(filepath))
+		{
+			r.status = "403 Forbidden";
+			r.body = "<h1>403 Forbidden</h1>";
+			r.contentType = "text/html";
+			return r;
+		}
 		write(fd, fileContent.c_str(), fileContent.size());
 		close(fd);
 

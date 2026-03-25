@@ -19,6 +19,59 @@ std::string readFile(const std::string& path) {
 	return buffer.str();
 }
 
+HttpResult Client::handleCGI()
+{
+    HttpResult r;
+
+    std::string fullPath = _root + _request.getPath();
+
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        r.status = "500 Internal Server Error";
+        r.body = "pipe error";
+        return r;
+    }
+    pid_t pid = fork();
+    if (pid == 0) {		//ENFANT
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+
+        // recupere la variable apres le ? pour la fournir au cgi;
+        std::string query = "";
+        size_t pos = _request.getPath().find("?");
+        if (pos != std::string::npos)
+            query = _request.getPath().substr(pos + 1);
+
+        setenv("QUERY_STRING", query.c_str(), 1);
+
+        char *argv[] = {(char *)fullPath.c_str(), NULL};
+        execve(fullPath.c_str(), argv, NULL);
+        exit(1);
+    }
+    else
+    {
+        // PARENT
+
+        close(pipefd[1]);
+        char buffer[4096];
+        std::string output;
+        int bytes = 0;
+
+        while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0) // envoie la rep
+            output.append(buffer, bytes);
+
+        close(pipefd[0]);
+        waitpid(pid, NULL, 0);
+
+        r.status = "200 OK";
+        r.body = output;
+        r.contentType = "text/plain"; // temp
+
+        return r;
+    }
+}
+
 HttpResult Client::handlePOST() {
 	HttpResult r;
 
@@ -124,6 +177,12 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	}
 
 	if (path == "/")
+		path = "/" + _index;
+	file = _root + path;
+	//debug
+	debugRequest(file);
+	if (path.find(".cgi") != std::string::npos)
+		return handleCGI();
 		path = "/" + server->index;
 	std::string file = server->root + path;
 

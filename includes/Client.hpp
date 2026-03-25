@@ -32,6 +32,13 @@ class Client {
 		~Client();									// close the connexion
 
 		// Public methods
+		bool		readFromSocket();	// read the client's request
+		bool		writeToSocket();	// send the response to the client
+		std::string	handleRequest();
+		HttpResult	handleGET();
+		HttpResult	handlePOST();
+		HttpResult 	handleCGI(); // magie noir
+		void 		debugRequest(const std::string &file);
 		bool				readFromSocket();		// read the client's request
 		bool				writeToSocket();		// send the response to the client
 		std::string			handleRequest();

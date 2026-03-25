@@ -20,7 +20,7 @@ _fd(-1), _port(port), _root(root), _index(index){
 	if (bind(_fd, (sockaddr*)&addr, sizeof(addr)) < 0) // associe le socket serveur a l'addresse IP + port
 		throw std::runtime_error("bind failed");
 	if (listen(_fd, 10) < 0) // met le socket TCP en mode passif pour accepet des connexions et creer une gile d'attente des clients en attente
-		throw std::runtime_error("listen failed"); 
+		throw std::runtime_error("listen failed");
 }
 
 Server::~Server() {

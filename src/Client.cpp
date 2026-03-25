@@ -61,10 +61,10 @@ HttpResult Client::handlePOST() {
 		size_t fileStart = headerEnd + 4;
 		size_t fileEnd = body.find(boundary, fileStart) - 2;
 		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
-std::cout << "File content size = " << fileContent.size() << std::endl;
+		std::cout << "File content size = " << fileContent.size() << std::endl;
 
 		// 7) Écrire le fichier
-		std::string filepath = _root + "/blabla/" + filename;
+		std::string filepath = _root + "/upload/" + filename; // ne pas hardcoder mettre
 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (fd < 0)
 		{

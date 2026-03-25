@@ -6,6 +6,7 @@ class Location {
 		std::string	path;
 		std::string	root;
 		std::string	index;
+		std::string	uploadPath;
 		std::string	cgiExtension;
 		std::string	cgiPath;
 		bool		autoindex;

@@ -56,8 +56,7 @@ int main(int ac, char** av)
 				if (isServer && (fds[i].revents & POLLIN)) {
 					int clientFd = currentServer->acceptClient(); // on accepte
 					if (clientFd >= 0) {
-						Client* c = new Client(clientFd, currentServer->getRoot(),
-							currentServer->getIndex());
+						Client* c = new Client(clientFd, currentServer->getPort(), config);
 						clients[clientFd] = c;
 
 						pollfd p;

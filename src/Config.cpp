@@ -30,20 +30,14 @@ static std::string stripComment(const std::string& value) {
 
 Config::Config(const std::string& path) {
 	ParseFile(path);
-	for (size_t i = 0; i < _servers.size(); ++i) {
-		ServerConfig &server = _servers[i];
-
-		for (size_t j = 0; j < server.locations.size(); ++j) {
-			Location &loc = server.locations[j];
-
-			if (loc.path == "/images") { // on trouve la location
-				if (loc.allowGet)
-					std::cout << "Method is allowed\n";
-				else
-					std::cout << "Method is NOT allowed\n";
+	for (size_t i = 0; i < _servers.size(); ++i)
+		for (size_t j = 0; j < _servers[i].locations.size(); ++j)
+			if (_servers[i].locations[j].path == "/error_page") {
+				if (_servers[i].locations[j].allowGet)
+					_servers[i].allowErrPage = true;
+				else 
+					_servers[i].allowErrPage = false;
 			}
-		}
-	}
 }
 
 const std::vector<ServerConfig>& Config::getServers() const {
@@ -139,8 +133,15 @@ void Config::ParseServerBlock(std::ifstream& file) {
 		else if (line.find("server_name") == 0) {
 			server.serverName = trim(line.substr(11));
 		}
-		else if (line.find("root") == 0)
+		else if (line.find("root") == 0) {
 			server.root = removeSemicolon(line.substr(4));
+			if (server.root.empty())
+				throw std::runtime_error("Root cannot be empty");
+			if (server.root == "/")
+				throw std::runtime_error("Root '/' is not allowed");
+			if (!server.root.empty() && server.root[server.root.size() - 1] == '/')
+				server.root.erase(server.root.size() - 1);
+		}
 		else if (line.find("index") == 0) {
 			server.index = removeSemicolon(line.substr(5));
 		}
@@ -152,10 +153,14 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			server.max_body_size = body;
 		}
 		else if (line.find("error_page") == 0) {
-			std::istringstream iss(line.substr(10));
+			std::istringstream iss(line);
+			std::string word;
 			int	code;
 			std::string path;
-			iss >> code >> path;
+			iss >> word >> code >> path;
+			if (path.empty()) {
+				throw std::runtime_error("Invalid error_page");
+			}
 			if (!path.empty() && path[path.size() - 1] == ';')
 				path = path.substr(0, path.size() - 1);
 			server.errorPages[code] = path;

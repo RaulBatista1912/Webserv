@@ -9,6 +9,7 @@ RM          = rm -f
 
 SRC_DIR     = src
 OBJ_DIR     = obj
+CGI_DIR		= www/tetris/cgi-bin
 
 SRC         = $(SRC_DIR)/main.cpp \
 				$(SRC_DIR)/Location.cpp \
@@ -29,6 +30,7 @@ all: $(NAME)
 $(NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 	@echo "✅ Build complete: $(NAME)"
+	make -C $(CGI_DIR)
 
 # Rule to compile .cpp → .o inside objs/
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
@@ -39,10 +41,12 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 clean:
 	$(RM) -r $(OBJ_DIR)
 	@echo "🧹 Object files removed"
+	make clean -C $(CGI_DIR)
 
 fclean: clean
 	$(RM) $(NAME)
 	@echo "🗑️  Executable removed"
+	make fclean -C $(CGI_DIR)
 
 re: fclean all
 

@@ -34,6 +34,7 @@ class Client {
 		std::string	handleRequest();
 		HttpResult	handleGET();
 		HttpResult	handlePOST();
+		HttpResult 	handleCGI(); // magie noir
 		void 		debugRequest(const std::string &file);
 
 		// Getters Setters

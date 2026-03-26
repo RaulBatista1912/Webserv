@@ -42,8 +42,7 @@ HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, cons
 		execve(fullPath.c_str(), argv, NULL);
 		exit(1);
 	}
-	else
-	{
+	else {
 		// PARENT
 		close(pipefd[1]);
 		char buffer[4096];
@@ -62,76 +61,85 @@ HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, cons
 	}
 }
 
-HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, const Location* loc) {
-	HttpResult r;
-	std::string contentType = _request.getHeader("Content-Type");
+HttpResult Client::handleUpload(const std::string& path,
+								const ServerConfig* server,
+								const Location* loc) {
 	(void)loc;
-	// 1) Vérifier si c'est un upload
-	// a checker la longueur de content length > maxBodySize
-	if (contentType.find("multipart/form-data") != std::string::npos) {
-		std::string body = _request.getBody();
+	std::string contentType = _request.getHeader("Content-Type");
+	std::string body = _request.getBody();
 
-		// 2) Récupérer le boundary
-		size_t pos = contentType.find("boundary=");
-		std::string boundary = "--" + contentType.substr(pos + 9);
+	// Vérif taille max
+	if (body.size() > static_cast<size_t>(server->max_body_size))
+		return handleError(server, 413, "413 Request Entity Too Large", path);
 
-		// 3) Trouver la première partie
-		size_t start = body.find(boundary);
-		start += boundary.size() + 2;
+	// 1) Boundary
+	size_t pos = contentType.find("boundary=");
+	std::string boundary = "--" + contentType.substr(pos + 9);
 
-		// 4) Headers de la partie
-		size_t headerEnd = body.find("\r\n\r\n", start);
-		std::string headers = body.substr(start, headerEnd - start);
+	// 2) Première partie
+	size_t start = body.find(boundary);
+	start += boundary.size() + 2;
 
-		// 5) Extraire filename
-		std::string filename;
-		size_t fn = headers.find("filename=\"");
-		fn += 10;
-		size_t end = headers.find("\"", fn);
-		filename = headers.substr(fn, end - fn);
+	// 3) Headers de la partie
+	size_t headerEnd = body.find("\r\n\r\n", start);
+	std::string headers = body.substr(start, headerEnd - start);
 
-		// 6) Extraire contenu du fichier
-		size_t fileStart = headerEnd + 4;
-		size_t fileEnd = body.find(boundary, fileStart) - 2;
-		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+	// 4) Filename
+	size_t fn = headers.find("filename=\"");
+	fn += 10;
+	size_t end = headers.find("\"", fn);
+	std::string filename = headers.substr(fn, end - fn);
 
-		// 7) Écrire le fichier
-		std::string filepath = server->root + path + "/" + filename;
-		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-		if (fd < 0)
-			return handleError(server, 404, "404 Not Found", path);
-		if (isDirectory(filepath))
-			return handleError(server, 403, "403 Forbidden", path);
-		write(fd, fileContent.c_str(), fileContent.size());
-		close(fd);
-		return handleError(server, 201, "201 Created", path);
-	}
+	// 5) Contenu du fichier
+	size_t fileStart = headerEnd + 4;
+	size_t fileEnd = body.find(boundary, fileStart) - 2;
+	std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
 
-	// 1. Récupérer le body
+	// 6) Construire le chemin final
+	std::string filepath = server->root + path + "/" + filename;
+
+	int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	if (fd < 0)
+		return handleError(server, 404, "404 Not Found", path);
+	if (isDirectory(filepath))
+		return handleError(server, 403, "403 Forbidden", path);
+	write(fd, fileContent.c_str(), fileContent.size());
+	close(fd);
+	return handleError(server, 201, "201 Created", path);
+}
+
+HttpResult Client::handlePOST(std::string& path,
+							  const ServerConfig* server,
+							  const Location* loc) {
+	std::string contentType = _request.getHeader("Content-Type");
+
+	// Si c'est un upload → déléguer
+	if (contentType.find("multipart/form-data") != std::string::npos)
+		return handleUpload(path, server, loc);
+
+	// Sinon POST normal (form-urlencoded)
 	std::string body = _request.getBody();
 	std::string value;
 
 	size_t pos = body.find('=');
 	if (pos != std::string::npos)
 		value = body.substr(pos + 1);
-	// 2. Construire le chemin du fichier
+
 	std::string completePath = server->root + path;
 
-	//debug
-	//debugRequest(completePath);
-	// 3. Sécurité basique
 	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
 		return handleError(server, 403, "403 Forbidden", path);
-	// 4. Ouvrir le fichier en écriture
+
 	std::ofstream out(completePath.c_str(), std::ios::binary);
 	if (!out)
 		return handleError(server, 500, "500 Internal Server Error", path);
-	// 5. Écrire le body
+
 	out.write(value.c_str(), value.size());
 	out.close();
-	// 6. Réponse
+
 	return handleError(server, 201, "201 Created", path);
 }
+
 
 const ServerConfig*	Client::findServer() const {
 	const std::vector<ServerConfig>& servers = _config.getServers();
@@ -201,8 +209,6 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	if (path == "/")
 		path = "/" + server->index;
 	file = server->root + path;
-	//debug
-	//debugRequest(file);
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
 	std::ifstream webPage(file.c_str(), std::ios::binary);
@@ -210,9 +216,8 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
+		handleError(server, 200, "200 OK", path);
 		r.body = buffer.str();
-		r.status = "200 OK";
-		r.contentType = getContentType(path);
 	}
 	else
 		r = handleError(server, 404, "404 Not Found", path);
@@ -227,12 +232,14 @@ std::string Client::handleRequest() {
 	const ServerConfig* server = findServer();
 	const Location* loc = server->findLocation(path);
 
+	//debug
+	//debugRequest(server->root + path);
 	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
 	else if (method == "DELETE")
-		r = handleError(server, 501, "501 Not Implemented", path);
+		r = handleDELETE(path, server, loc);
 	else
 		r = handleError(server, 501, "501 Not Implemented", path);
 	return res.buildResponse(r.status, r.body, r.contentType);

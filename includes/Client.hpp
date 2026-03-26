@@ -18,41 +18,36 @@ class Client {
 		};
 	private:
 		int					_fd;					// refers to the client's socket
-		int					_port;					
+		int					_port;
 		State				_state;					// the current state of the connexion
 		std::string			_readBuffer;			// contain the client's http request
 		std::string			_writeBuffer;			// contain the server's response
 		Request				_request;
 		Config&				_config;
-		const std::string	_root;
-		const std::string	_index;
 
 	public:
 		Client(int fd, int port, Config& config);	// open the connexion
 		~Client();									// close the connexion
 
 		// Public methods
-		bool		readFromSocket();	// read the client's request
-		bool		writeToSocket();	// send the response to the client
-		std::string	handleRequest();
-		HttpResult	handleGET();
-		HttpResult	handlePOST();
-		HttpResult 	handleCGI(); // magie noir
-		void 		debugRequest(const std::string &file);
-		bool				readFromSocket();		// read the client's request
-		bool				writeToSocket();		// send the response to the client
+		bool				readFromSocket();	// read the client's request
+		bool				writeToSocket();	// send the response to the client
 		std::string			handleRequest();
+		HttpResult 			handleCGI(std::string& path, const ServerConfig* server, const Location* loc); // magie noir
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
-		HttpResult			handlePOST();
+		HttpResult			handlePOST(std::string& path, const ServerConfig* server, const Location* loc);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
-		HttpResult			handleError(const ServerConfig* server, int code, std::string err);
+		HttpResult			handleError(const ServerConfig* server, int code, const std::string& err, const std::string& path);
 
 		// Getters Setters
 		void				setState(State s);
 		State				getState() const;
 		int					getFd() const;
 };
-std::string getContentType(const std::string &path);
+
+std::string					getContentType(const std::string &path);
+bool						isDirectory(const std::string &path);
+std::string					readFile(const std::string& path);
 //Goal: To handle the client's connection

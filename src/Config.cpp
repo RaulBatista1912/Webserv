@@ -172,6 +172,7 @@ void Config::ParseServerBlock(std::ifstream& file) {
 	_servers.push_back(server);
 }
 
+// In the Block Location
 void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 	std::string line;
 
@@ -197,7 +198,7 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 				else if (method == "DELETE")
 					loc.allowDelete = true;
 			}
-		} 
+		}
 		else if (line.find("autoindex") == 0) {
 			std::string val = trim(line.substr(9));
 			loc.autoindex = (val == "on");

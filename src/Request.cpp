@@ -99,6 +99,16 @@ const std::string& Request::getBody() const {
 	return _body;
 }
 
+const std::string& Request::getHeader(const std::string& key) const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it != _headers.end())
+		return it->second;
+
+	static const std::string empty = "";
+	return empty;
+}
+
+
 const std::map<std::string, std::string>& Request::getHeaders() const {
 	return _headers;
 }

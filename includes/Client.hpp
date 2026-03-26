@@ -30,9 +30,10 @@ class Client {
 		~Client();									// close the connexion
 
 		// Public methods
-		bool				readFromSocket();		// read the client's request
-		bool				writeToSocket();		// send the response to the client
+		bool				readFromSocket();	// read the client's request
+		bool				writeToSocket();	// send the response to the client
 		std::string			handleRequest();
+		HttpResult 			handleCGI(std::string& path, const ServerConfig* server, const Location* loc); // magie noir
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handlePOST(std::string& path, const ServerConfig* server, const Location* loc);
 		void 				debugRequest(const std::string &file);

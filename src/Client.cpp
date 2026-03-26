@@ -12,12 +12,60 @@ Client::~Client() {
 }
 
 // Public methods
-HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, const Location* loc) {
+HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, const Location* loc)
+{
 	HttpResult r;
 	(void)loc;
+	std::string fullPath = server->root + _request.getPath();
+
+	int pipefd[2];
+	if (pipe(pipefd) == -1) {
+		r.status = "500 Internal Server Error";
+		r.body = "pipe error";
+		return r;
+	}
+	pid_t pid = fork();
+	if (pid == 0) {		//ENFANT
+		dup2(pipefd[1], STDOUT_FILENO);
+		close(pipefd[0]);
+		close(pipefd[1]);
+
+		// recupere la variable apres le ? pour la fournir au cgi;
+		std::string query = "";
+		size_t pos = _request.getPath().find("?");
+		if (pos != std::string::npos)
+			query = _request.getPath().substr(pos + 1);
+
+		setenv("QUERY_STRING", query.c_str(), 1);
+
+		char *argv[] = {(char *)fullPath.c_str(), NULL};
+		execve(fullPath.c_str(), argv, NULL);
+		exit(1);
+	}
+	else
+	{
+		// PARENT
+		close(pipefd[1]);
+		char buffer[4096];
+		std::string output;
+		int bytes = 0;
+
+		while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0) // envoie la rep
+			output.append(buffer, bytes);
+		close(pipefd[0]);
+		waitpid(pid, NULL, 0);
+
+		r.status = "200 OK";
+		r.body = output;
+		r.contentType = getContentType(path);
+		return r;
+	}
+}
+
+HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, const Location* loc) {
+	HttpResult r;
 	std::string contentType = _request.getHeader("Content-Type");
-	std::cout << path << std::endl;
-	std::cout << loc->path << std::endl;
+	(void)loc;
 	// 1) Vérifier si c'est un upload
 	// a checker la longueur de content length > maxBodySize
 	if (contentType.find("multipart/form-data") != std::string::npos) {
@@ -47,8 +95,6 @@ HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, con
 		size_t fileEnd = body.find(boundary, fileStart) - 2;
 		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
 
-		//debug
-		debugRequest(path);
 		// 7) Écrire le fichier
 		std::string filepath = server->root + path + "/" + filename;
 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -72,7 +118,7 @@ HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, con
 	std::string completePath = server->root + path;
 
 	//debug
-	debugRequest(completePath);
+	//debugRequest(completePath);
 	// 3. Sécurité basique
 	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
 		return handleError(server, 403, "403 Forbidden", path);
@@ -142,6 +188,7 @@ HttpResult Client::handleError(const ServerConfig* server, int code, const std::
 
 HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
 	HttpResult r;
+	std::string file;
 
 	if (path.find("..") != std::string::npos) {
 		r = handleError(server, 403, "403 Forbidden", path);
@@ -153,8 +200,11 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	}
 	if (path == "/")
 		path = "/" + server->index;
-	std::string file = server->root + path;
-
+	file = server->root + path;
+	//debug
+	//debugRequest(file);
+	if (path.find(".cgi") != std::string::npos)
+		return handleCGI(path, server, loc);
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		std::cout << "OPEN FILE: " << file << "\n" << std::endl;

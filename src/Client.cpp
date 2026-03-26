@@ -4,7 +4,8 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, int port, Config& config): _fd(fd), _port(port), _state(READING), _config(config){}
+Client::Client(int fd, int port, Config& config):
+_fd(fd), _port(port), _state(READING), _config(config){}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -12,7 +13,7 @@ Client::~Client() {
 }
 
 // Public methods
-HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, const Location* loc)
+HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server, const Location* loc)
 {
 	HttpResult r;
 	(void)loc;
@@ -61,9 +62,13 @@ HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, cons
 	}
 }
 
-HttpResult Client::handleUpload(const std::string& path,
-								const ServerConfig* server,
-								const Location* loc) {
+HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc) {
+	const std::string completePath = server->root + path;
+	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
+		return handleError(server, 403, "403 Forbidden", path);
+}
+
+HttpResult Client::handleUpload(const std::string& path, const ServerConfig* server, const Location* loc) {
 	(void)loc;
 	std::string contentType = _request.getHeader("Content-Type");
 	std::string body = _request.getBody();
@@ -108,9 +113,8 @@ HttpResult Client::handleUpload(const std::string& path,
 	return handleError(server, 201, "201 Created", path);
 }
 
-HttpResult Client::handlePOST(std::string& path,
-							  const ServerConfig* server,
-							  const Location* loc) {
+HttpResult Client::handlePOST(const std::string& path, const ServerConfig* server, const Location* loc) {
+
 	std::string contentType = _request.getHeader("Content-Type");
 
 	// Si c'est un upload → déléguer
@@ -244,7 +248,6 @@ std::string Client::handleRequest() {
 		r = handleError(server, 501, "501 Not Implemented", path);
 	return res.buildResponse(r.status, r.body, r.contentType);
 }
-
 
 bool Client::readFromSocket() {
 	char buffer[4096];

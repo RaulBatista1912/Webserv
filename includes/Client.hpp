@@ -24,8 +24,6 @@ class Client {
 		std::string			_writeBuffer;			// contain the server's response
 		Request				_request;
 		Config&				_config;
-		const std::string	_root;
-		const std::string	_index;
 
 	public:
 		Client(int fd, int port, Config& config);	// open the connexion
@@ -40,13 +38,15 @@ class Client {
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
-		HttpResult			handleError(const ServerConfig* server, int code, std::string err);
-		HttpResult			attendshandleError(const ServerConfig* server, int code, std::string err,  const std::string& path);
+		HttpResult			handleError(const ServerConfig* server, int code, const std::string& err, const std::string& path);
 
 		// Getters Setters
 		void				setState(State s);
 		State				getState() const;
 		int					getFd() const;
 };
-std::string getContentType(const std::string &path);
+
+std::string					getContentType(const std::string &path);
+bool						isDirectory(const std::string &path);
+std::string					readFile(const std::string& path);
 //Goal: To handle the client's connection

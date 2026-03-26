@@ -12,7 +12,7 @@ const Location* ServerConfig::findLocation(const std::string& path) const
 		if (loc.path == "/")
 			root = &loc;
 
-		if (path.find(loc.path) == 0) {
+		if (path.compare(0, loc.path.size(), loc.path) == 0) {
 			if (!best || loc.path.size() > best->path.size())
 				best = &loc;
 		}

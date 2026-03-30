@@ -18,7 +18,7 @@ class Client {
 		};
 	private:
 		int					_fd;					// refers to the client's socket
-		int					_port;
+		//int					_port;
 		State				_state;					// the current state of the connexion
 		std::string			_readBuffer;			// contain the client's http request
 		std::string			_writeBuffer;			// contain the server's response
@@ -26,7 +26,7 @@ class Client {
 		Config&				_config;
 
 	public:
-		Client(int fd, int port, Config& config);	// open the connexion
+		Client(int fd, Config& config);	// open the connexion
 		~Client();									// close the connexion
 
 		// Public methods
@@ -39,7 +39,8 @@ class Client {
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
-		HttpResult			handleError(const ServerConfig* server, int code, const std::string& err, const std::string& path);
+		HttpResult			handleError(const ServerConfig* server, int code, const std::string& err);
+		HttpResult			handleAutoindex(const ServerConfig* server, std::string path);
 
 		// Getters Setters
 		void				setState(State s);

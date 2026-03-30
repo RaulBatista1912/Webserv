@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, int port, Config& config): _fd(fd), _port(port), _state(READING), _config(config){}
+Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -99,12 +99,12 @@ HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, con
 		std::string filepath = server->root + path + "/" + filename;
 		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (fd < 0)
-			return handleError(server, 404, "404 Not Found", path);
+			return handleError(server, 404, "404 Not Found");
 		if (isDirectory(filepath))
-			return handleError(server, 403, "403 Forbidden", path);
+			return handleError(server, 403, "403 Forbidden");
 		write(fd, fileContent.c_str(), fileContent.size());
 		close(fd);
-		return handleError(server, 201, "201 Created", path);
+		return handleError(server, 201, "201 Created");
 	}
 
 	// 1. Récupérer le body
@@ -121,16 +121,16 @@ HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, con
 	//debugRequest(completePath);
 	// 3. Sécurité basique
 	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
-		return handleError(server, 403, "403 Forbidden", path);
+		return handleError(server, 403, "403 Forbidden");
 	// 4. Ouvrir le fichier en écriture
 	std::ofstream out(completePath.c_str(), std::ios::binary);
 	if (!out)
-		return handleError(server, 500, "500 Internal Server Error", path);
+		return handleError(server, 500, "500 Internal Server Error");
 	// 5. Écrire le body
 	out.write(value.c_str(), value.size());
 	out.close();
 	// 6. Réponse
-	return handleError(server, 201, "201 Created", path);
+	return handleError(server, 201, "201 Created");
 }
 
 const ServerConfig*	Client::findServer() const {
@@ -142,19 +142,19 @@ const ServerConfig*	Client::findServer() const {
 		return &servers[0];
 
 	std::string host = it->second;
+	std::size_t pos = host.find(':');
+	int	port = 0;
+	if (pos != std::string::npos) {
+		std::string portStr = host.substr(pos + 1);
+		port = std::atoi(portStr.c_str());
+	}
 
 	for (size_t i = 0; i < servers.size(); ++i) {
 		const ServerConfig& s = servers[i];
-
-		if (s.port != _port)
-			continue;
-		if (!s.serverName.empty()) {
-			if (host.find(s.serverName) != std::string::npos)
-				return &s;
-		}
-		else
+		if (port == s.port)
 			return &s;
 	}
+	std::cout << std::endl;
 	return &servers[0];
 }
 
@@ -174,32 +174,83 @@ std::string	Client::readErrorPage(const ServerConfig& server, int code) {
 	return "<h1>Error</h1>";
 }
 
-HttpResult Client::handleError(const ServerConfig* server, int code, const std::string& err, const std::string& path) {
+HttpResult Client::handleError(const ServerConfig* server, int code, const std::string& err) {
 	HttpResult r;
 
-	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
+	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end()) 
 		r.body = readErrorPage(*server, code);
 	else
 		r.body = "<h1>" + err + "<h1>";
 	r.status = err;
-	r.contentType = getContentType(path);
+	r.contentType = "text/html";
 	return r;
 }
+
+#include <dirent.h>   // opendir, readdir, closedir
+#include <sys/stat.h> // stat
+#include <string>
+#include <sstream>
+
+HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
+    HttpResult r;
+
+    std::stringstream html;
+
+    html << "<html><head><title>Index of " << path << "</title></head><body>";
+    html << "<h1>Index of " << path << "</h1><ul>";
+
+    DIR* dir = opendir(path.c_str());
+    if (dir == NULL) {
+        return handleError(server, 500, "500 Internal Server Error");
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name = entry->d_name;
+
+        // ignorer "." et ".."
+        if (name == "." || name == "..")
+            continue;
+
+        html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+    }
+
+    closedir(dir);
+
+    html << "</ul></body></html>";
+
+    r.body = html.str();
+    r.status = "200 OK";
+    r.contentType = "text/html";
+
+    return r;
+}
+
 
 HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
 	HttpResult r;
 	std::string file;
 
 	if (path.find("..") != std::string::npos) {
-		r = handleError(server, 403, "403 Forbidden", path);
+		r = handleError(server, 403, "403 Forbidden");
 		return r;
 	}
 	if (loc && !loc->allowGet) {
-		r = handleError(server, 405, "405 Method Not Allowed", path);
+		r = handleError(server, 405, "405 Method Not Allowed");
 		return r;
 	}
 	if (path == "/")
 		path = "/" + server->index;
+	else if (isDirectory(server->root + path)) {
+		if (loc->autoindex) {
+			r = handleAutoindex(server, server->root + path);
+			return r;
+		}
+		else {
+			r = handleError(server, 403, "403 Forbidden");
+			return r;
+		}
+	}
 	file = server->root + path;
 	//debug
 	//debugRequest(file);
@@ -207,7 +258,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		return handleCGI(path, server, loc);
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
-		std::cout << "OPEN FILE: " << file << "\n" << std::endl;
+		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
 		r.body = buffer.str();
@@ -215,7 +266,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r.contentType = getContentType(path);
 	}
 	else
-		r = handleError(server, 404, "404 Not Found", path);
+		r = handleError(server, 404, "404 Not Found");
 	return r;
 }
 
@@ -223,18 +274,22 @@ std::string Client::handleRequest() {
 	Response res;
 	HttpResult r;
 	std::string method = _request.getMethod();
+	//std::cout << method << std::endl;
 	std::string path = _request.getPath();
+	//std::cout << path << std::endl;
 	const ServerConfig* server = findServer();
+	//std::cout << server->port << std::endl;
 	const Location* loc = server->findLocation(path);
+	//std::cout << loc << std::endl;
 
 	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
 	else if (method == "DELETE")
-		r = handleError(server, 501, "501 Not Implemented", path);
+		r = handleError(server, 501, "501 Not Implemented");
 	else
-		r = handleError(server, 501, "501 Not Implemented", path);
+		r = handleError(server, 501, "501 Not Implemented");
 	return res.buildResponse(r.status, r.body, r.contentType);
 }
 

@@ -199,7 +199,7 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 		}
 		else if (line.find("autoindex") == 0) {
 			std::string val = trim(line.substr(9));
-			loc.autoindex = (val == "on");
+			loc.autoindex = (val == "on" || val == "on;");
 		}
 		else if (line.find("root") == 0) {
 			loc.root = trim(line.substr(4));

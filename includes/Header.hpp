@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <string>
 #include <fstream>
 #include <map>
 #include <iostream>
@@ -11,6 +10,9 @@
 #include <cctype>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>   // opendir, readdir, closedir
+#include <sys/stat.h> // stat
+#include <string>
+#include <sys/types.h>
 #include <sys/wait.h>

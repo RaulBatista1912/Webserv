@@ -33,9 +33,11 @@ class Client {
 		bool				readFromSocket();	// read the client's request
 		bool				writeToSocket();	// send the response to the client
 		std::string			handleRequest();
-		HttpResult 			handleCGI(std::string& path, const ServerConfig* server, const Location* loc); // magie noir
+		HttpResult 			handleCGI(const std::string& path, const ServerConfig* server, const Location* loc); // magie raciste
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
-		HttpResult			handlePOST(std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);

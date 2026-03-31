@@ -62,17 +62,38 @@ HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server
 	}
 }
 
-HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc) {
+HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc)
+{
+	// 1. Vérifier si DELETE est autorisé
+	if (loc && !loc->allowDelete)
+		return handleError(server, 405, "405 Method Not Allowed", path);
+
+	// 2. Construire le chemin réel
 	const std::string completePath = server->root + path;
-	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
+
+	// 3. Sécurité basique
+	if (completePath.find("..") != std::string::npos && isDirectory(completePath))
 		return handleError(server, 403, "403 Forbidden", path);
+
+	// 5. Vérifier si le fichier existe
+	if (0 < access(completePath.c_str(), F_OK) || 0 < access(completePath.c_str(), W_OK))
+		return handleError(server, 404, "404 Not Found", path);
+
+	// 6. Supprimer
+	if (std::remove(completePath.c_str()) != 0)
+		return handleError(server, 500, "500 Internal Server Error", path);
+
+	// 7. Succès
+	return handleError(server, 204, "204 No Content", path);
 }
 
+
 HttpResult Client::handleUpload(const std::string& path, const ServerConfig* server, const Location* loc) {
-	(void)loc;
 	std::string contentType = _request.getHeader("Content-Type");
 	std::string body = _request.getBody();
 
+	if (!loc->allowPost)
+		return handleError(server, 405, "405 Method Not Allowed", path);
 	// Vérif taille max
 	if (body.size() > static_cast<size_t>(server->max_body_size))
 		return handleError(server, 413, "413 Request Entity Too Large", path);
@@ -116,7 +137,8 @@ HttpResult Client::handleUpload(const std::string& path, const ServerConfig* ser
 HttpResult Client::handlePOST(const std::string& path, const ServerConfig* server, const Location* loc) {
 
 	std::string contentType = _request.getHeader("Content-Type");
-
+	if (!loc->allowPost)
+		return handleError(server, 405, "405 Method Not Allowed", path);
 	// Si c'est un upload → déléguer
 	if (contentType.find("multipart/form-data") != std::string::npos)
 		return handleUpload(path, server, loc);

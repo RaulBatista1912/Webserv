@@ -4,19 +4,19 @@ Response::Response() {}
 
 Response::~Response() {}
 
-std::string Response::buildResponse(std::string status, std::string body, std::string type) {
+std::string Response::buildResponse(HttpResult r) {
 	std::stringstream ss;
-	ss << body.size();
+	ss << r.contentLength;
 	std::string len = ss.str();
-	std::string response = "HTTP/1.1 " + status + "\r\n"
+	std::string response = "HTTP/1.1 " + r.status + "\r\n"
 			"Content-Length: "+ len +"\r\n"
 			"Connection: close\r\n"
-			"Content-Type: " + type +"\r\n"
+			"Content-Type: " + r.contentType +"\r\n"
 			"\r\n"
-			+ body;
+			+ r.body;
 	//debug
-	// std::cout << "----- DEBUG RESPONSE -----" << std::endl;
-	// std::cout << response << std::endl;
-	// std::cout << "----------END RESPONSE---------------\n" << std::endl;
+	std::cout << "----- DEBUG RESPONSE -----" << std::endl;
+	std::cout << response << std::endl;
+	std::cout << "----------END RESPONSE---------------\n" << std::endl;
 	return (response);
 }

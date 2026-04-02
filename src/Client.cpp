@@ -213,6 +213,7 @@ HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, c
 	else
 		r.body = "<h1>" + status + "<h1>";
 	r.status = status;
+	r.contentLength = r.body.size();
 	r.contentType = getContentType(path);
 	return r;
 }
@@ -285,8 +286,9 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
 		r.status = "200 OK";
-		r.contentType = getContentType(path);
 		r.body = buffer.str();
+		r.contentType = getContentType(path);
+		r.contentLength = r.body.size();
 	}
 	else
 		r = handleRequestResponse(server, 404, "404 Not Found", path);
@@ -317,7 +319,7 @@ std::string Client::handleRequest() {
 		r = handleHEAD(path, server, loc);
 	else
 		r = handleRequestResponse(server, 501, "501 Not Implemented", path);
-	return res.buildResponse(r.status, r.body, r.contentType);
+	return res.buildResponse(r);
 }
 
 bool Client::readFromSocket() {
@@ -339,9 +341,11 @@ bool Client::readFromSocket() {
 		return true;
 	if (!_request.parse(_readBuffer)) {
 		Response res;
-		_writeBuffer = res.buildResponse("400 Bad Request",
-										"<h1>400 Bad Request</h1>",
-										"text/html");
+		HttpResult r;
+		r.status = "400 Bad Request";
+		r.body = "<h1>400 Bad Request</h1>";
+		r.contentType = "text/html";
+		_writeBuffer = res.buildResponse(r);
 		_state = WRITING;
 		return true;
 	}

@@ -7,6 +7,7 @@ struct HttpResult {
 	std::string body;
 	std::string status;
 	std::string contentType;
+	size_t		contentLength;
 };
 
 class Client {

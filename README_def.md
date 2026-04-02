@@ -92,3 +92,6 @@ POST image: curl -X POST -F "file=@chemin/vers/image.png" http://localhost:8080/
 
 ### DELETE
 curl -X DELETE http://localhost:8080/uploads/img.png
+
+### HEAD
+curl --head http://localhost:8080/images/fat.jpg

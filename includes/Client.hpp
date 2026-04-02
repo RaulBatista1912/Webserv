@@ -35,6 +35,7 @@ class Client {
 		std::string			handleRequest();
 		HttpResult 			handleCGI(const std::string& path, const ServerConfig* server, const Location* loc); // magie raciste
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handleHEAD(std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);

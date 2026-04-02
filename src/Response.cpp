@@ -15,6 +15,8 @@ std::string Response::buildResponse(std::string status, std::string body, std::s
 			"\r\n"
 			+ body;
 	//debug
-	//std::cout << response << std::endl;
+	// std::cout << "----- DEBUG RESPONSE -----" << std::endl;
+	// std::cout << response << std::endl;
+	// std::cout << "----------END RESPONSE---------------\n" << std::endl;
 	return (response);
 }

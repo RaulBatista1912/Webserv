@@ -108,3 +108,8 @@ body {
 .main-button.secondary {
     background: #3a3a3a;
 }
+
+#fat{
+	width: 25rem;
+	height: 20rem;
+}

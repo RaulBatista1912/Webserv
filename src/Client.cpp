@@ -95,7 +95,7 @@ HttpResult Client::handleUpload(const std::string& path, const ServerConfig* ser
 		return handleError(server, 405, "405 Method Not Allowed");
 	// Vérif taille max
 	if (body.size() > static_cast<size_t>(server->max_body_size))
-		return handleError(server, 413, "413 Request Entity Too Large");
+		return handleError(server, 413, "413 Content Too Large");
 
 	// 1) Boundary
 	size_t pos = contentType.find("boundary=");
@@ -218,6 +218,7 @@ HttpResult Client::handleError(const ServerConfig* server, int code, const std::
 	return r;
 }
 
+
 HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
 	HttpResult r;
 	std::stringstream html;
@@ -239,12 +240,18 @@ HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path)
 		html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
 	}
 	closedir(dir);
+	r = handleError(server, 200, "200 OK");
 	html << "</ul></body></html>";
 	r.body = html.str();
-	r.status = "200 OK";
-	r.contentType = "text/html";
 	return r;
 }
+
+HttpResult Client::handleHEAD(std::string& path, const ServerConfig* server, const Location* loc) {
+	HttpResult r = handleGET(path, server, loc);
+	r.body = "";
+	return r;
+}
+
 
 HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
 	HttpResult r;
@@ -278,7 +285,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
-		handleError(server, 200, "200 OK");
+		r = handleError(server, 200, "200 OK");
 		r.body = buffer.str();
 	}
 	else
@@ -299,13 +306,15 @@ std::string Client::handleRequest() {
 	//std::cout << loc << std::endl;
 
 	//debug
-	debugRequest(server->root + path);
+	//debugRequest(server->root + path);
 	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
 	else if (method == "DELETE")
 		r = handleDELETE(path, server, loc);
+	else if (method == "HEAD")
+		r = handleHEAD(path, server, loc);
 	else
 		r = handleError(server, 501, "501 Not Implemented");
 	return res.buildResponse(r.status, r.body, r.contentType);

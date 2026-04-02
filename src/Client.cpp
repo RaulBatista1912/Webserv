@@ -219,32 +219,48 @@ HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, c
 }
 
 
-HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
+HttpResult Client::handleAutoindex(const ServerConfig* server, const std::string& path) {
 	HttpResult r;
 	std::stringstream html;
 
+	// Construire le chemin réel sur le disque
+	std::string realPath = server->root + path;
+
+	// Début du HTML
 	html << "<html><head><title>Index of " << path << "</title></head><body>";
 	html << "<h1>Index of " << path << "</h1><ul>";
 
-	DIR* dir = opendir(path.c_str());
-	if (dir == NULL) {
+	DIR* dir = opendir(realPath.c_str());
+	if (!dir) {
 		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
 	}
+
 	struct dirent* entry;
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		// ignorer "." et ".."
+
+		// Ignorer . et ..
 		if (name == "." || name == "..")
 			continue;
 
-		html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+		// Construire le lien correct : /images/fat.jpg
+		html << "<li><a href=\""
+			 << path << name
+			 << "\">" << name << "</a></li>";
 	}
+
 	closedir(dir);
-	r = handleRequestResponse(server, 200, "200 OK", path);
 	html << "</ul></body></html>";
+
+	// Construire la réponse HTTP
+	r.status = "200 OK";
 	r.body = html.str();
+	r.contentType = "text/html";
+	r.contentLength = r.body.size();
+
 	return r;
 }
+
 
 HttpResult Client::handleHEAD(std::string& path, const ServerConfig* server, const Location* loc) {
 	HttpResult r = handleGET(path, server, loc);
@@ -269,7 +285,8 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		path = "/" + server->index;
 	else if (isDirectory(server->root + path)) {
 		if (loc->autoindex) {
-			r = handleAutoindex(server, server->root + path);
+			std::cout << "OPEN FILE: " << path << "\n" << std::endl;
+			r = handleAutoindex(server, path);
 			return r;
 		}
 		else {
@@ -280,6 +297,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	file = server->root + path;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
+	file = server->root + path;
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;

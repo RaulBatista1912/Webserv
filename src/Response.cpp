@@ -15,8 +15,8 @@ std::string Response::buildResponse(HttpResult r) {
 			"\r\n"
 			+ r.body;
 	//debug
-	std::cout << "----- DEBUG RESPONSE -----" << std::endl;
-	std::cout << response << std::endl;
-	std::cout << "----------END RESPONSE---------------\n" << std::endl;
+	// std::cout << "----- DEBUG RESPONSE -----" << std::endl;
+	// std::cout << response << std::endl;
+	// std::cout << "----------END RESPONSE---------------\n" << std::endl;
 	return (response);
 }

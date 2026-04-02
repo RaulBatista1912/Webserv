@@ -285,7 +285,6 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		path = "/" + server->index;
 	else if (isDirectory(server->root + path)) {
 		if (loc->autoindex) {
-			std::cout << "OPEN FILE: " << path << "\n" << std::endl;
 			r = handleAutoindex(server, path);
 			return r;
 		}

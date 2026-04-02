@@ -42,7 +42,7 @@ class Client {
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
-		HttpResult			handleError(const ServerConfig* server, int code, const std::string& err, const std::string& path);
+	HttpResult				handleRequestResponse(const ServerConfig* server, int code, const std::string& err, const std::string& path);
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string path);
 
 		// Getters Setters

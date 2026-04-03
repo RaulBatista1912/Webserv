@@ -22,8 +22,7 @@ int main(int ac, char** av)
 
 		// creer un serveur pour chaque port,
 		for (size_t i = 0; i < serverConfigs.size(); ++i) {
-			Server* srv = new Server(serverConfigs[i].port, serverConfigs[i].root,
-				serverConfigs[i].index);
+			Server* srv = new Server(serverConfigs[i].port, serverConfigs[i].root);
 			servers.push_back(srv);
 
 			pollfd p;

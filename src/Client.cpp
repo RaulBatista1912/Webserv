@@ -257,10 +257,13 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r = handleRequestResponse(server, 405, "405 Method Not Allowed", path);
 		return r;
 	}
-	if (path == "/")
-		path = "/" + server->index;
-	else if (isDirectory(server->root + path)) {
-		if (loc->autoindex) {
+	if (isDirectory(server->root + path)) {
+		if (!loc->index.empty()) {
+			if (path[path.length() - 1] != '/')
+				path += '/';
+			path += loc->index;
+		}
+		else if (loc->autoindex) {
 			r = handleAutoindex(server, server->root + path);
 			return r;
 		}
@@ -270,6 +273,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
+	std::cout << file << std::endl;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
 	std::ifstream webPage(file.c_str(), std::ios::binary);

@@ -140,9 +140,6 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			if (!server.root.empty() && server.root[server.root.size() - 1] == '/')
 				server.root.erase(server.root.size() - 1);
 		}
-		else if (line.find("index") == 0) {
-			server.index = removeSemicolon(line.substr(5));
-		}
 		else if (line.find("client_max_body_size") == 0) {
 			std::string MaxBody = trim(line.substr(20));
 			int	body;
@@ -205,7 +202,7 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 			loc.root = trim(line.substr(4));
 		}
 		else if (line.find("index") == 0) {
-			loc.index = trim(line.substr(5));
+			loc.index = removeSemicolon(line.substr(5));
 		}
 		else if (line.find("cgi_extension") == 0) {
 			loc.cgiExtension = trim(line.substr(13));

@@ -1,5 +1,6 @@
 #pragma once
 #include "Header.hpp"
+#include "Client.hpp"
 
 class Response {
 	private:
@@ -7,7 +8,7 @@ class Response {
 		std::map<std::string, std::string> _headers;
 		std::string _body;
 	public:
-		std::string buildResponse(std::string status, std::string body, std::string type);
+		std::string buildResponse(HttpResult r);
 		Response();
 		~Response();
 };

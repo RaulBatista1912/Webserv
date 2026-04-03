@@ -7,6 +7,7 @@ struct HttpResult {
 	std::string body;
 	std::string status;
 	std::string contentType;
+	size_t		contentLength;
 };
 
 class Client {
@@ -35,6 +36,7 @@ class Client {
 		std::string			handleRequest();
 		HttpResult 			handleCGI(const std::string& path, const ServerConfig* server, const Location* loc); // magie raciste
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handleHEAD(std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
@@ -42,7 +44,7 @@ class Client {
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
 	HttpResult				handleRequestResponse(const ServerConfig* server, int code, const std::string& err, const std::string& path);
-		HttpResult			handleAutoindex(const ServerConfig* server, std::string path);
+		HttpResult			handleAutoindex(const ServerConfig* server, const std::string& path);
 
 		// Getters Setters
 		void				setState(State s);

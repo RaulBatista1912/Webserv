@@ -208,42 +208,66 @@ std::string	Client::readErrorPage(const ServerConfig& server, int code) {
 HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path) {
 	HttpResult r;
 
-	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end()) 
+	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
 		r.body = readErrorPage(*server, code);
 	else
 		r.body = "<h1>" + status + "<h1>";
 	r.status = status;
+	r.contentLength = r.body.size();
 	r.contentType = getContentType(path);
 	return r;
 }
 
-HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
+
+HttpResult Client::handleAutoindex(const ServerConfig* server, const std::string& path) {
 	HttpResult r;
 	std::stringstream html;
 
+	// Construire le chemin réel sur le disque
+	std::string realPath = server->root + path;
+
+	// Début du HTML
 	html << "<html><head><title>Index of " << path << "</title></head><body>";
 	html << "<h1>Index of " << path << "</h1><ul>";
 
-	DIR* dir = opendir(path.c_str());
-	if (dir == NULL) {
+	DIR* dir = opendir(realPath.c_str());
+	if (!dir) {
 		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
 	}
+
 	struct dirent* entry;
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		// ignorer "." et ".."
+
+		// Ignorer . et ..
 		if (name == "." || name == "..")
 			continue;
 
-		html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+		// Construire le lien correct : /images/fat.jpg
+		html << "<li><a href=\""
+			 << path << name
+			 << "\">" << name << "</a></li>";
 	}
+
 	closedir(dir);
 	html << "</ul></body></html>";
-	r.body = html.str();
+
+	// Construire la réponse HTTP
 	r.status = "200 OK";
+	r.body = html.str();
 	r.contentType = "text/html";
+	r.contentLength = r.body.size();
+
 	return r;
 }
+
+
+HttpResult Client::handleHEAD(std::string& path, const ServerConfig* server, const Location* loc) {
+	HttpResult r = handleGET(path, server, loc);
+	r.body = "";
+	return r;
+}
+
 
 HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
 	HttpResult r;
@@ -257,14 +281,11 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r = handleRequestResponse(server, 405, "405 Method Not Allowed", path);
 		return r;
 	}
-	if (isDirectory(server->root + path)) {
-		if (!loc->index.empty()) {
-			if (path[path.length() - 1] != '/')
-				path += '/';
-			path += loc->index;
-		}
-		else if (loc->autoindex) {
-			r = handleAutoindex(server, server->root + path);
+	if (path == "/")
+		path = "/" + server->index;
+	else if (isDirectory(server->root + path)) {
+		if (loc->autoindex) {
+			r = handleAutoindex(server, path);
 			return r;
 		}
 		else {
@@ -276,14 +297,16 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	std::cout << file << std::endl;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
+	file = server->root + path;
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
 		r.status = "200 OK";
-		r.contentType = getContentType(path);
 		r.body = buffer.str();
+		r.contentType = getContentType(path);
+		r.contentLength = r.body.size();
 	}
 	else
 		r = handleRequestResponse(server, 404, "404 Not Found", path);
@@ -310,9 +333,11 @@ std::string Client::handleRequest() {
 		r = handlePOST(path, server, loc);
 	else if (method == "DELETE")
 		r = handleDELETE(path, server, loc);
+	else if (method == "HEAD")
+		r = handleHEAD(path, server, loc);
 	else
 		r = handleRequestResponse(server, 501, "501 Not Implemented", path);
-	return res.buildResponse(r.status, r.body, r.contentType);
+	return res.buildResponse(r);
 }
 
 bool Client::readFromSocket() {
@@ -334,9 +359,11 @@ bool Client::readFromSocket() {
 		return true;
 	if (!_request.parse(_readBuffer)) {
 		Response res;
-		_writeBuffer = res.buildResponse("400 Bad Request",
-										"<h1>400 Bad Request</h1>",
-										"text/html");
+		HttpResult r;
+		r.status = "400 Bad Request";
+		r.body = "<h1>400 Bad Request</h1>";
+		r.contentType = "text/html";
+		_writeBuffer = res.buildResponse(r);
 		_state = WRITING;
 		return true;
 	}

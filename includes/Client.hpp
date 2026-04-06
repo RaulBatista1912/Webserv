@@ -23,6 +23,7 @@ class Client {
 		State				_state;					// the current state of the connexion
 		std::string			_readBuffer;			// contain the client's http request
 		std::string			_writeBuffer;			// contain the server's response
+		std::string			_queryString;
 		Request				_request;
 		Config&				_config;
 

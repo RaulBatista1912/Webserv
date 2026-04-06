@@ -4,6 +4,48 @@
 #include <iostream>
 #include <cstdlib>
 
+extern char **environ; // Utiliser pour transmettre au CGI les var d'environ
+
+// Parse la request-line brute
+static std::string extractQueryFromRequestLine(const std::string& rawRequest) {
+	size_t lineEnd = rawRequest.find("\r\n");
+	if (lineEnd == std::string::npos)
+		return "";
+	std::string requestLine = rawRequest.substr(0, lineEnd);
+
+	size_t firstSpace = requestLine.find(' ');
+	if (firstSpace == std::string::npos)
+		return "";
+	size_t secondSpace = requestLine.find(' ', firstSpace + 1);
+	if (secondSpace == std::string::npos)
+		return "";
+
+	std::string target = requestLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
+	size_t qPos = target.find('?');
+	if (qPos == std::string::npos)
+		return "";
+	return target.substr(qPos + 1);
+}
+
+// Le CGI ecrit ses propres headers HTTP sur stdout.
+static std::string findCgiContentType(const std::string& cgiOutput) {
+	size_t headersEnd = cgiOutput.find("\r\n\r\n");
+	if (headersEnd == std::string::npos)
+		return "";
+	std::string headers = cgiOutput.substr(0, headersEnd);
+	std::string key = "Content-Type:";
+	size_t pos = headers.find(key);
+	if (pos == std::string::npos)
+		return "";
+	pos += key.size();
+	while (pos < headers.size() && (headers[pos] == ' ' || headers[pos] == '\t'))
+		++pos;
+	size_t end = headers.find("\r\n", pos);
+	if (end == std::string::npos)
+		end = headers.size();
+	return headers.substr(pos, end - pos);
+}
+
 Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
 
 Client::~Client() {
@@ -16,47 +58,71 @@ HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server
 {
 	HttpResult r;
 	(void)loc;
-	std::string fullPath = server->root + _request.getPath();
+	std::string fullPath = server->root + path;
+	std::string requestBody = _request.getBody();
 
-	int pipefd[2];
-	if (pipe(pipefd) == -1) {
+	int outPipe[2];
+	int inPipe[2];
+	if (pipe(outPipe) == -1 || pipe(inPipe) == -1) {
 		r.status = "500 Internal Server Error";
 		r.body = "pipe error";
 		return r;
 	}
 	pid_t pid = fork();
 	if (pid == 0) {		//ENFANT
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[0]);
-		close(pipefd[1]);
+		// Redirige stdout du CGI vers le pipe pour que le parent recupere la sortie.
+		dup2(outPipe[1], STDOUT_FILENO);
+		// Redirige stdin du CGI pour recevoir le body des requetes POST.
+		dup2(inPipe[0], STDIN_FILENO);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		close(inPipe[0]);
+		close(inPipe[1]);
 
-		// recupere la variable apres le ? pour la fournir au cgi;
-		std::string query = "";
-		size_t pos = _request.getPath().find("?");
-		if (pos != std::string::npos)
-			query = _request.getPath().substr(pos + 1);
+		std::stringstream len;
+		len << requestBody.size();
+		std::string contentLength = len.str();
 
-		setenv("QUERY_STRING", query.c_str(), 1);
+		// Variables CGI utilisees par le binaire
+		setenv("QUERY_STRING", _queryString.c_str(), 1);
+		setenv("REQUEST_METHOD", _request.getMethod().c_str(), 1);
+		setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+		setenv("CONTENT_TYPE", _request.getHeader("Content-Type").c_str(), 1);
+		// Donne au CGI son chemin complet pour qu'il puisse ecrire son fichier au bon endroit.
+		setenv("SCRIPT_FILENAME", fullPath.c_str(), 1);
 
 		char *argv[] = {(char *)fullPath.c_str(), NULL};
-		execve(fullPath.c_str(), argv, NULL);
+		// Important: passer 'environ' (et pas NULL), sinon les setenv ne sont pas visibles.
+		execve(fullPath.c_str(), argv, environ);
 		exit(1);
 	}
 	else {
 		// PARENT
-		close(pipefd[1]);
+		close(outPipe[1]);
+		close(inPipe[0]);
+		if (!requestBody.empty())
+			write(inPipe[1], requestBody.c_str(), requestBody.size());
+		close(inPipe[1]);
 		char buffer[4096];
 		std::string output;
 		int bytes = 0;
 
-		while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0) // envoie la rep
+		while ((bytes = read(outPipe[0], buffer, sizeof(buffer))) > 0) // envoie la rep
 			output.append(buffer, bytes);
-		close(pipefd[0]);
+		close(outPipe[0]);
 		waitpid(pid, NULL, 0);
 
 		r.status = "200 OK";
-		r.body = output;
-		r.contentType = getContentType(path);
+		size_t headersEnd = output.find("\r\n\r\n");
+		// On retire les headers CGI pour ne garder que le body HTTP final.
+		if (headersEnd != std::string::npos)
+			r.body = output.substr(headersEnd + 4);
+		else
+			r.body = output;
+		r.contentType = findCgiContentType(output);
+		if (r.contentType.empty())
+			r.contentType = "text/plain";
+		std::cout << "[CGI] query='" << _queryString << "' body='" << r.body << "'" << std::endl;
 		return r;
 	}
 }
@@ -364,6 +430,8 @@ bool Client::readFromSocket() {
 		body_len = std::atoi(h["Content-Length"].c_str());
 	if (_readBuffer.size() < header_end + 4 + body_len)
 		return true;
+	// Sauvegarde la query brute avant _request.parse(), qui supprime '?...'.
+	_queryString = extractQueryFromRequestLine(_readBuffer);
 	if (!_request.parse(_readBuffer)) {
 		Response res;
 		HttpResult r;

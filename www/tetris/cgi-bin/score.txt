@@ -1,0 +1,10 @@
+score=1200
+score=0
+score=0
+score=0
+score=0
+score=0
+name=Alessio score=100
+name=player score=0
+name=0 score=0
+name=d score=0

@@ -44,7 +44,7 @@ class Client {
 		const ServerConfig*	findServer() const;
 		std::string			readErrorPage(const ServerConfig& server, int code);
 	HttpResult				handleRequestResponse(const ServerConfig* server, int code, const std::string& err, const std::string& path);
-		HttpResult			handleAutoindex(const ServerConfig* server, const std::string& path);
+		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 
 		// Getters Setters
 		void				setState(State s);

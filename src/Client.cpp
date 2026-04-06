@@ -290,7 +290,12 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	if (path == "/")
 		path = "/" + loc->index;
 	else if (isDirectory(server->root + path)) {
-		if (loc->autoindex) {
+		if (!loc->index.empty()) {
+			if (path[path.length() - 1] != '/')
+				path += '/';
+			path += loc->index;
+		}
+		else if (loc->autoindex) {
 			r = handleAutoindex(server, path);
 			return r;
 		}

@@ -219,11 +219,13 @@ HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, c
 }
 
 
-HttpResult Client::handleAutoindex(const ServerConfig* server, const std::string& path) {
+HttpResult Client::handleAutoindex(const ServerConfig* server, std::string& path) {
 	HttpResult r;
 	std::stringstream html;
 
 	// Construire le chemin réel sur le disque
+	if (path[path.size() - 1] != '/')
+		path += '/';
 	std::string realPath = server->root + path;
 
 	// Début du HTML
@@ -282,7 +284,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		return r;
 	}
 	if (path == "/")
-		path = "/" + server->index;
+		path = "/" + loc->index;
 	else if (isDirectory(server->root + path)) {
 		if (loc->autoindex) {
 			r = handleAutoindex(server, path);

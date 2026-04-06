@@ -239,15 +239,19 @@ HttpResult Client::handleAutoindex(const ServerConfig* server, const std::string
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
 
-		// Ignorer . et ..
 		if (name == "." || name == "..")
 			continue;
 
-		// Construire le lien correct : /images/fat.jpg
-		html << "<li><a href=\""
-			 << path << name
-			 << "\">" << name << "</a></li>";
+		// Toujours forcer un slash final
+		std::string href = path;
+		if (href.empty() || href[href.size() - 1] != '/')
+			href += '/';
+
+		href += name;
+
+		html << "<li><a href=\"" << href << "\">" << name << "</a></li>";
 	}
+	std::cout << html.str() << std::endl;
 
 	closedir(dir);
 	html << "</ul></body></html>";
@@ -282,7 +286,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		return r;
 	}
 	if (path == "/")
-		path = "/" + server->index;
+		path = "/" + loc->index;
 	else if (isDirectory(server->root + path)) {
 		if (loc->autoindex) {
 			r = handleAutoindex(server, path);
@@ -294,7 +298,6 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
-	std::cout << file << std::endl;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
 	file = server->root + path;

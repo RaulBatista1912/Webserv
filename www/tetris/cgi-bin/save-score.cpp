@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <cerrno>
 
 /*
     Convertit un caractere hexadecimal en entier.
@@ -99,7 +100,7 @@ int main(void) {
     // Methode HTTP actuelle (GET, POST, ...)
     const char* method = std::getenv("REQUEST_METHOD");
 
-    if (method == "POST") {
+    if (method && std::strcmp(method, "POST") == 0) {
         const char* lenStr = std::getenv("CONTENT_LENGTH");
         int len = 0;
         if (lenStr)
@@ -109,7 +110,11 @@ int main(void) {
             std::string body;
             body.resize(len);
             std::cin.read(&body[0], len);
-            scoreLine = body;
+            std::streamsize readCount = std::cin.gcount();
+            if (readCount > 0) {
+                body.resize(static_cast<std::size_t>(readCount));
+                scoreLine = body;
+            }
         }
     }
 
@@ -120,7 +125,19 @@ int main(void) {
     }
 
     // Ouverture du fichier score en mode app.
-    std::ofstream scoreFile(getScoreFilePath().c_str(), std::ios::app);
+    std::string scorePath = getScoreFilePath();
+    std::ofstream scoreFile(scorePath.c_str(), std::ios::app);
+    if (!scoreFile) {
+        std::cerr << "[save-score.cgi] open failed path='" << scorePath
+                  << "' error='" << std::strerror(errno) << "'" << std::endl;
+        std::cout << "Status: 500 Internal Server Error\r\n";
+        std::cout << "Content-Type: text/plain\r\n";
+        std::cout << "Cache-Control: no-store\r\n";
+        std::cout << "Pragma: no-cache\r\n\r\n";
+        std::cout << "failed to open score file: " << scorePath
+                  << " (" << std::strerror(errno) << ")\n";
+        return 1;
+    }
 
     // Extraction des champs utiles depuis le payload (name=...&score=...)
     std::string playerName = extractParam(scoreLine, "name");

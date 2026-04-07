@@ -397,7 +397,7 @@ function sendScore(finalScore) {
     const body = "name=" + encodeURIComponent(playerName)
         + "&score=" + encodeURIComponent(String(finalScore));
 
-    fetch("/cgi-bin/save-score.cgi", {
+    fetch("cgi-bin/save-score.cgi", {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"

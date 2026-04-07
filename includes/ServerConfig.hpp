@@ -7,7 +7,6 @@ class ServerConfig {
 		int							port;
 		std::string					serverName;
 		std::string					root;
-		std::string					index;
 		int							max_body_size;
 		bool						allowErrPage;
 		std::map<int, std::string>	errorPages;
@@ -17,7 +16,6 @@ class ServerConfig {
 		ServerConfig() : port(-1),
 						serverName("undefined"),
 						root("undefined"),
-						index("undefined"),
 						max_body_size(-1) {}
 		const Location* findLocation(const std::string& path) const;
 };

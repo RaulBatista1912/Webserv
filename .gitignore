@@ -6,6 +6,7 @@ serialize
 base
 README_map.md
 *.DS_Store
+uploads/*
 
 
 # Object files

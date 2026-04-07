@@ -54,7 +54,7 @@ Client::~Client() {
 }
 
 // Public methods
-HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, const Location* loc)
+HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server, const Location* loc)
 {
 	HttpResult r;
 	(void)loc;
@@ -96,8 +96,7 @@ HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, cons
 		execve(fullPath.c_str(), argv, environ);
 		exit(1);
 	}
-	else
-	{
+	else {
 		// PARENT
 		close(outPipe[1]);
 		close(inPipe[0]);
@@ -128,78 +127,109 @@ HttpResult Client::handleCGI(std::string& path, const ServerConfig* server, cons
 	}
 }
 
-HttpResult Client::handlePOST(std::string& path, const ServerConfig* server, const Location* loc) {
-	HttpResult r;
+HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc)
+{
+	// 1. Vérifier si DELETE est autorisé
+	if (loc && !loc->allowDelete)
+		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
+
+	// 2. Construire le chemin réel
+	const std::string completePath = server->root + path;
+
+	// 3. Sécurité basique
+	if (completePath.find("..") != std::string::npos && isDirectory(completePath))
+		return handleRequestResponse(server, 403, "403 Forbidden", path);
+
+	// 5. Vérifier si le fichier existe
+	if (0 < access(completePath.c_str(), F_OK) || 0 < access(completePath.c_str(), W_OK))
+		return handleRequestResponse(server, 404, "404 Not Found", path);
+
+	// 6. Supprimer
+	if (std::remove(completePath.c_str()) != 0)
+		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
+
+	// 7. Succès
+	return handleRequestResponse(server, 204, "204 No Content", path);
+}
+
+
+HttpResult Client::handleUpload(const std::string& path, const ServerConfig* server, const Location* loc) {
 	std::string contentType = _request.getHeader("Content-Type");
-	(void)loc;
-	if (path.find(".cgi") != std::string::npos)
-		return handleCGI(path, server, loc);
-	// 1) Vérifier si c'est un upload
-	// a checker la longueur de content length > maxBodySize
-	if (contentType.find("multipart/form-data") != std::string::npos) {
-		std::string body = _request.getBody();
+	std::string body = _request.getBody();
 
-		// 2) Récupérer le boundary
-		size_t pos = contentType.find("boundary=");
-		std::string boundary = "--" + contentType.substr(pos + 9);
+	if (!loc->allowPost)
+		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
+	// Vérif taille max
+	if (body.size() > static_cast<size_t>(server->max_body_size))
+		return handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
 
-		// 3) Trouver la première partie
-		size_t start = body.find(boundary);
-		start += boundary.size() + 2;
+	// 1) Boundary
+	size_t pos = contentType.find("boundary=");
+	std::string boundary = "--" + contentType.substr(pos + 9);
 
-		// 4) Headers de la partie
-		size_t headerEnd = body.find("\r\n\r\n", start);
-		std::string headers = body.substr(start, headerEnd - start);
+	// 2) Première partie
+	size_t start = body.find(boundary);
+	start += boundary.size() + 2;
 
-		// 5) Extraire filename
-		std::string filename;
-		size_t fn = headers.find("filename=\"");
-		fn += 10;
-		size_t end = headers.find("\"", fn);
-		filename = headers.substr(fn, end - fn);
+	// 3) Headers de la partie
+	size_t headerEnd = body.find("\r\n\r\n", start);
+	std::string headers = body.substr(start, headerEnd - start);
 
-		// 6) Extraire contenu du fichier
-		size_t fileStart = headerEnd + 4;
-		size_t fileEnd = body.find(boundary, fileStart) - 2;
-		std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
+	// 4) Filename
+	size_t fn = headers.find("filename=\"");
+	fn += 10;
+	size_t end = headers.find("\"", fn);
+	std::string filename = headers.substr(fn, end - fn);
 
-		// 7) Écrire le fichier
-		std::string filepath = server->root + path + "/" + filename;
-		int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-		if (fd < 0)
-			return handleError(server, 404, "404 Not Found");
-		if (isDirectory(filepath))
-			return handleError(server, 403, "403 Forbidden");
-		write(fd, fileContent.c_str(), fileContent.size());
-		close(fd);
-		return handleError(server, 201, "201 Created");
-	}
+	// 5) Contenu du fichier
+	size_t fileStart = headerEnd + 4;
+	size_t fileEnd = body.find(boundary, fileStart) - 2;
+	std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
 
-	// 1. Récupérer le body
+	// 6) Construire le chemin final
+	std::string filepath = server->root + path + "/" + filename;
+
+	int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	if (fd < 0)
+		return handleRequestResponse(server, 404, "404 Not Found", path);
+	if (isDirectory(filepath))
+		return handleRequestResponse(server, 403, "403 Forbidden", path);
+	write(fd, fileContent.c_str(), fileContent.size());
+	close(fd);
+	return handleRequestResponse(server, 201, "201 Created", path);
+}
+
+HttpResult Client::handlePOST(const std::string& path, const ServerConfig* server, const Location* loc) {
+
+	std::string contentType = _request.getHeader("Content-Type");
+	if (!loc->allowPost)
+		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
+	// Si c'est un upload → déléguer
+	if (contentType.find("multipart/form-data") != std::string::npos)
+		return handleUpload(path, server, loc);
+
+	// Sinon POST normal (form-urlencoded ou body simple depuis curl)
 	std::string body = _request.getBody();
 	std::string value;
 
 	size_t pos = body.find('=');
 	if (pos != std::string::npos)
 		value = body.substr(pos + 1);
-	// 2. Construire le chemin du fichier
+	else
+		value = body;
 	std::string completePath = server->root + path;
-
-	//debug
-	//debugRequest(completePath);
-	// 3. Sécurité basique
 	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
-		return handleError(server, 403, "403 Forbidden");
-	// 4. Ouvrir le fichier en écriture
+		return handleRequestResponse(server, 403, "403 Forbidden", path);
+
 	std::ofstream out(completePath.c_str(), std::ios::binary);
 	if (!out)
-		return handleError(server, 500, "500 Internal Server Error");
-	// 5. Écrire le body
+		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
+
 	out.write(value.c_str(), value.size());
 	out.close();
-	// 6. Réponse
-	return handleError(server, 201, "201 Created");
+	return handleRequestResponse(server, 201, "201 Created", path);
 }
+
 
 const ServerConfig*	Client::findServer() const {
 	const std::vector<ServerConfig>& servers = _config.getServers();
@@ -218,9 +248,8 @@ const ServerConfig*	Client::findServer() const {
 	}
 
 	for (size_t i = 0; i < servers.size(); ++i) {
-		const ServerConfig& s = servers[i];
-		if (port == s.port)
-			return &s;
+		if (port == servers[i].port)
+			return &servers[i];
 	}
 	std::cout << std::endl;
 	return &servers[0];
@@ -242,56 +271,69 @@ std::string	Client::readErrorPage(const ServerConfig& server, int code) {
 	return "<h1>Error</h1>";
 }
 
-HttpResult Client::handleError(const ServerConfig* server, int code, const std::string& err) {
+HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path) {
 	HttpResult r;
 
-	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end()) 
+	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
 		r.body = readErrorPage(*server, code);
 	else
-		r.body = "<h1>" + err + "<h1>";
-	r.status = err;
-	r.contentType = "text/html";
+		r.body = "<h1>" + status + "<h1>";
+	r.status = status;
+	r.contentLength = r.body.size();
+	r.contentType = getContentType(path);
 	return r;
 }
 
-#include <dirent.h>   // opendir, readdir, closedir
-#include <sys/stat.h> // stat
-#include <string>
-#include <sstream>
 
-HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
-    HttpResult r;
+HttpResult Client::handleAutoindex(const ServerConfig* server, std::string& path) {
+	HttpResult r;
+	std::stringstream html;
 
-    std::stringstream html;
+	// Construire le chemin réel sur le disque
+	if (path[path.size() - 1] != '/')
+		path += '/';
+	std::string realPath = server->root + path;
 
-    html << "<html><head><title>Index of " << path << "</title></head><body>";
-    html << "<h1>Index of " << path << "</h1><ul>";
+	// Début du HTML
+	html << "<html><head><title>Index of " << path << "</title></head><body>";
+	html << "<h1>Index of " << path << "</h1><ul>";
 
-    DIR* dir = opendir(path.c_str());
-    if (dir == NULL) {
-        return handleError(server, 500, "500 Internal Server Error");
-    }
+	DIR* dir = opendir(realPath.c_str());
+	if (!dir) {
+		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
+	}
 
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != NULL) {
-        std::string name = entry->d_name;
+	struct dirent* entry;
+	while ((entry = readdir(dir)) != NULL) {
+		std::string name = entry->d_name;
 
-        // ignorer "." et ".."
-        if (name == "." || name == "..")
-            continue;
+		// Ignorer . et ..
+		if (name == "." || name == "..")
+			continue;
 
-        html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-    }
+		// Construire le lien correct : /images/fat.jpg
+		html << "<li><a href=\""
+			 << path << name
+			 << "\">" << name << "</a></li>";
+	}
 
-    closedir(dir);
+	closedir(dir);
+	html << "</ul></body></html>";
 
-    html << "</ul></body></html>";
+	// Construire la réponse HTTP
+	r.status = "200 OK";
+	r.body = html.str();
+	r.contentType = "text/html";
+	r.contentLength = r.body.size();
 
-    r.body = html.str();
-    r.status = "200 OK";
-    r.contentType = "text/html";
+	return r;
+}
 
-    return r;
+
+HttpResult Client::handleHEAD(std::string& path, const ServerConfig* server, const Location* loc) {
+	HttpResult r = handleGET(path, server, loc);
+	r.body = "";
+	return r;
 }
 
 
@@ -300,41 +342,47 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	std::string file;
 
 	if (path.find("..") != std::string::npos) {
-		r = handleError(server, 403, "403 Forbidden");
+		r = handleRequestResponse(server, 403, "403 Forbidden", path);
 		return r;
 	}
 	if (loc && !loc->allowGet) {
-		r = handleError(server, 405, "405 Method Not Allowed");
+		r = handleRequestResponse(server, 405, "405 Method Not Allowed", path);
 		return r;
 	}
 	if (path == "/")
-		path = "/" + server->index;
+		path = "/" + loc->index;
 	else if (isDirectory(server->root + path)) {
-		if (loc->autoindex) {
-			r = handleAutoindex(server, server->root + path);
+		if (!loc->index.empty()) {
+			if (path[path.length() - 1] != '/')
+				path += '/';
+			path += loc->index;
+		}
+		else if (loc->autoindex) {
+			r = handleAutoindex(server, path);
 			return r;
 		}
 		else {
-			r = handleError(server, 403, "403 Forbidden");
+			r = handleRequestResponse(server, 403, "403 Forbidden", path);
 			return r;
 		}
 	}
 	file = server->root + path;
-	//debug
-	//debugRequest(file);
+	std::cout << file << std::endl;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
+	file = server->root + path;
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
-		r.body = buffer.str();
 		r.status = "200 OK";
+		r.body = buffer.str();
 		r.contentType = getContentType(path);
+		r.contentLength = r.body.size();
 	}
 	else
-		r = handleError(server, 404, "404 Not Found");
+		r = handleRequestResponse(server, 404, "404 Not Found", path);
 	return r;
 }
 
@@ -350,17 +398,20 @@ std::string Client::handleRequest() {
 	const Location* loc = server->findLocation(path);
 	//std::cout << loc << std::endl;
 
+	//debug
+	//debugRequest(server->root + path);
 	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
 	else if (method == "DELETE")
-		r = handleError(server, 501, "501 Not Implemented");
+		r = handleDELETE(path, server, loc);
+	else if (method == "HEAD")
+		r = handleHEAD(path, server, loc);
 	else
-		r = handleError(server, 501, "501 Not Implemented");
-	return res.buildResponse(r.status, r.body, r.contentType);
+		r = handleRequestResponse(server, 501, "501 Not Implemented", path);
+	return res.buildResponse(r);
 }
-
 
 bool Client::readFromSocket() {
 	char buffer[4096];
@@ -383,9 +434,11 @@ bool Client::readFromSocket() {
 	_queryString = extractQueryFromRequestLine(_readBuffer);
 	if (!_request.parse(_readBuffer)) {
 		Response res;
-		_writeBuffer = res.buildResponse("400 Bad Request",
-										"<h1>400 Bad Request</h1>",
-										"text/html");
+		HttpResult r;
+		r.status = "400 Bad Request";
+		r.body = "<h1>400 Bad Request</h1>";
+		r.contentType = "text/html";
+		_writeBuffer = res.buildResponse(r);
 		_state = WRITING;
 		return true;
 	}

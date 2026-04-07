@@ -80,8 +80,18 @@ Protocol: Usually TCP (connection-oriented, reliable) or UDP (connectionless, fa
 
 # Commands
 
-test GET: curl -X GET http://localhost:8080/../default.conf
+### GET
+GET text: curl -X GET http://localhost:8080/test.txt
 
-test GET security: curl --path-as-is http://localhost:8080/../default.conf
+GET security: curl --path-as-is http://localhost:8080/../default.conf
 
-test POST: curl -X POST -d "hello"
+### POST
+POST text: curl -X POST http://localhost:8080/test.txt -d "hello"
+
+POST image: curl -X POST -F "file=@chemin/vers/image.png" http://localhost:8080/uploads/
+
+### DELETE
+curl -X DELETE http://localhost:8080/uploads/img.png
+
+### HEAD
+curl --head http://localhost:8080/images/fat.jpg

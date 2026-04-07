@@ -3,6 +3,8 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <cerrno>
+#include <sstream>
 
 /*
     Convertit un caractere hexadecimal en entier.
@@ -90,16 +92,87 @@ static std::string getScoreFilePath()
     return scriptPath.substr(0, slash + 1) + "score.txt";
 }
 
+static std::string extractFromRecordLine(const std::string& line,
+                                         const std::string& key)
+{
+    std::string needle = key + "=";
+    std::size_t pos = line.find(needle);
+    if (pos == std::string::npos)
+        return "";
+
+    pos += needle.size();
+    std::size_t end = line.find(' ', pos);
+    if (end == std::string::npos)
+        return line.substr(pos);
+    return line.substr(pos, end - pos);
+}
+
+static bool findBestScoreByName(const std::string& scorePath,
+                                const std::string& playerName,
+                                std::string& bestScore)
+{
+    std::ifstream in(scorePath.c_str());
+    if (!in)
+        return false;
+
+    bool found = false;
+    int best = 0;
+    std::string line;
+
+    while (std::getline(in, line)) {
+        std::string name = extractFromRecordLine(line, "name");
+        if (name != playerName)
+            continue;
+
+        int score = std::atoi(extractFromRecordLine(line, "score").c_str());
+        if (!found || score > best) {
+            best = score;
+            found = true;
+        }
+    }
+
+    if (!found)
+        return false;
+
+    std::ostringstream oss;
+    oss << best;
+    bestScore = oss.str();
+    return true;
+}
+
 int main(void) {
-    // Payload brut recu (POST body ou QUERY_STRING)
+    std::string scorePath = getScoreFilePath();
+    // Payload brut recu
     std::string scoreLine;
-    // Ligne finale lisible qui sera ecrite dans score.txt
+    // Ligne qui sera ecrite dans score.txt
     std::string recordLine;
-
-    // Methode HTTP actuelle (GET, POST, ...)
+    // Methode HTTP (GET, POST, ...)
     const char* method = std::getenv("REQUEST_METHOD");
+    const char* query = std::getenv("QUERY_STRING");
+    std::string queryString = query ? query : "";
 
-    if (std::strcmp(method, "POST") == 0) {
+    // Mode recherche: GET /save-score.cgi?name=alice
+    if (method && std::strcmp(method, "GET") == 0) {
+        std::string wantedName = extractParam(queryString, "name");
+        std::string maybeScore = extractParam(queryString, "score");
+
+        if (!wantedName.empty() && maybeScore.empty()) {
+            std::string bestScore;
+            bool found = findBestScoreByName(scorePath, wantedName, bestScore);
+
+            std::cout << "Content-Type: text/plain\r\n";
+            std::cout << "Cache-Control: no-store\r\n";
+            std::cout << "Pragma: no-cache\r\n\r\n";
+
+            if (found)
+                std::cout << "name=" << wantedName << " score=" << bestScore << "\n";
+            else
+                std::cout << "name=" << wantedName << " score=not_found\n";
+            return 0;
+        }
+    }
+
+    if (method && std::strcmp(method, "POST") == 0) {
         const char* lenStr = std::getenv("CONTENT_LENGTH");
         int len = 0;
         if (lenStr)
@@ -109,18 +182,32 @@ int main(void) {
             std::string body;
             body.resize(len);
             std::cin.read(&body[0], len);
-            scoreLine = body;
+            std::streamsize readCount = std::cin.gcount();
+            if (readCount > 0) {
+                body.resize(static_cast<std::size_t>(readCount));
+                scoreLine = body;
+            }
         }
     }
 
     if (scoreLine.empty()) {
-        const char* query = std::getenv("QUERY_STRING");
         if (query)
             scoreLine = query;
     }
 
     // Ouverture du fichier score en mode app.
-    std::ofstream scoreFile(getScoreFilePath().c_str(), std::ios::app);
+    std::ofstream scoreFile(scorePath.c_str(), std::ios::app);
+    if (!scoreFile) {
+        std::cerr << "[save-score.cgi] open failed path='" << scorePath
+                  << "' error='" << std::strerror(errno) << "'" << std::endl;
+        std::cout << "Status: 500 Internal Server Error\r\n";
+        std::cout << "Content-Type: text/plain\r\n";
+        std::cout << "Cache-Control: no-store\r\n";
+        std::cout << "Pragma: no-cache\r\n\r\n";
+        std::cout << "failed to open score file: " << scorePath
+                  << " (" << std::strerror(errno) << ")\n";
+        return 1;
+    }
 
     // Extraction des champs utiles depuis le payload (name=...&score=...)
     std::string playerName = extractParam(scoreLine, "name");

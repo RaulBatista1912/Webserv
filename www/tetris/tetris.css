@@ -66,6 +66,42 @@ h1 {
     padding: 10px;
 }
 
+.search-card {
+    display: grid;
+    gap: 8px;
+}
+
+.search-input,
+.search-btn {
+    width: 100%;
+    border: 1px solid #3a4f69;
+    border-radius: 6px;
+    background: #0f1b2f;
+    color: #e8edf2;
+    padding: 8px;
+    font-size: 13px;
+}
+
+.search-input::placeholder {
+    color: #8ca0b6;
+}
+
+.search-btn {
+    cursor: pointer;
+    background: #213347;
+}
+
+.search-btn:hover {
+    background: #29415a;
+}
+
+.search-result {
+    margin: 0;
+    min-height: 18px;
+    font-size: 12px;
+    color: #b7c4d3;
+}
+
 .label {
     margin: 0;
     font-size: 12px;
@@ -94,6 +130,10 @@ h1 {
     }
 
     .restart {
+        grid-column: 1 / -1;
+    }
+
+    .search-card {
         grid-column: 1 / -1;
     }
 }

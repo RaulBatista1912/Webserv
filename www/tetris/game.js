@@ -29,6 +29,9 @@ const linesEl = document.getElementById("lines");
 const levelEl = document.getElementById("level");
 const statusEl = document.getElementById("status");
 const restartBtn = document.getElementById("restart");
+const searchNameEl = document.getElementById("search-name");
+const searchBtnEl = document.getElementById("search-btn");
+const searchResultEl = document.getElementById("search-result");
 
 // Couleurs associees aux formes
 const COLORS = ["#58f1ff", "#ffe380", "#c88cff", "#ffb266", "#7fa7ff"];
@@ -397,7 +400,9 @@ function sendScore(finalScore) {
     const body = "name=" + encodeURIComponent(playerName)
         + "&score=" + encodeURIComponent(String(finalScore));
 
-    fetch("cgi-bin/save-score.cgi", {
+    const cgiUrl = getCgiUrl();
+
+    fetch(cgiUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -413,6 +418,60 @@ function sendScore(finalScore) {
         .catch(function (err) {
             // En cas d'erreur reseau
             console.log("Erreur fetch score:", err);
+        });
+}
+
+function getPlayerBestScore(name) {
+    const url = getCgiUrl() + "?name=" + encodeURIComponent(name);
+
+    return fetch(url, {
+        method: "GET"
+    })
+        .then(function (res) {
+            return res.text();
+        })
+        .then(function (text) {
+            // Format attendu: "name=alice score=1200" ou "score=not_found"
+            const marker = "score=";
+            const pos = text.indexOf(marker);
+            if (pos === -1)
+                return null;
+
+            const raw = text.slice(pos + marker.length).trim();
+            if (raw === "not_found")
+                return null;
+            return raw;
+        });
+}
+
+function getCgiUrl() {
+    const p = window.location.pathname;
+    if (p.indexOf("/tetris") === 0)
+        return "/tetris/cgi-bin/save-score.cgi";
+    return "/cgi-bin/save-score.cgi";
+}
+
+function searchPlayerScore() {
+    if (!searchNameEl || !searchResultEl)
+        return;
+
+    const wantedName = searchNameEl.value.trim();
+    if (wantedName.length === 0) {
+        searchResultEl.textContent = "Please enter a player name.";
+        return;
+    }
+
+    searchResultEl.textContent = "Searching...";
+
+    getPlayerBestScore(wantedName)
+        .then(function (best) {
+            if (best === null)
+                searchResultEl.textContent = "No score found for " + wantedName + ".";
+            else
+                searchResultEl.textContent = wantedName + " best score: " + best;
+        })
+        .catch(function () {
+            searchResultEl.textContent = "Search failed. Please retry.";
         });
 }
 
@@ -458,4 +517,27 @@ function askPlayerName() {
 
 // Demarre une partie au chargement de la page
 playerName = askPlayerName();
+getPlayerBestScore(playerName)
+    .then(function (best) {
+        if (!statusEl)
+            return;
+
+        if (best === null)
+            statusEl.textContent = "Joueur: " + playerName + " - Aucun score enregistre.";
+        else
+            statusEl.textContent = "Joueur: " + playerName + " - Meilleur score: " + best;
+    })
+    .catch(function () {
+        // On garde le jeu jouable meme si la requete score echoue.
+    });
+
+if (searchBtnEl)
+    searchBtnEl.addEventListener("click", searchPlayerScore);
+
+if (searchNameEl)
+    searchNameEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter")
+            searchPlayerScore();
+    });
+
 resetGame();

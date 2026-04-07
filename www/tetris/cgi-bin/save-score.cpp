@@ -4,6 +4,7 @@
 #include <string>
 #include <cstring>
 #include <cerrno>
+#include <sstream>
 
 /*
     Convertit un caractere hexadecimal en entier.
@@ -91,14 +92,85 @@ static std::string getScoreFilePath()
     return scriptPath.substr(0, slash + 1) + "score.txt";
 }
 
-int main(void) {
-    // Payload brut recu (POST body ou QUERY_STRING)
-    std::string scoreLine;
-    // Ligne finale lisible qui sera ecrite dans score.txt
-    std::string recordLine;
+static std::string extractFromRecordLine(const std::string& line,
+                                         const std::string& key)
+{
+    std::string needle = key + "=";
+    std::size_t pos = line.find(needle);
+    if (pos == std::string::npos)
+        return "";
 
-    // Methode HTTP actuelle (GET, POST, ...)
+    pos += needle.size();
+    std::size_t end = line.find(' ', pos);
+    if (end == std::string::npos)
+        return line.substr(pos);
+    return line.substr(pos, end - pos);
+}
+
+static bool findBestScoreByName(const std::string& scorePath,
+                                const std::string& playerName,
+                                std::string& bestScore)
+{
+    std::ifstream in(scorePath.c_str());
+    if (!in)
+        return false;
+
+    bool found = false;
+    int best = 0;
+    std::string line;
+
+    while (std::getline(in, line)) {
+        std::string name = extractFromRecordLine(line, "name");
+        if (name != playerName)
+            continue;
+
+        int score = std::atoi(extractFromRecordLine(line, "score").c_str());
+        if (!found || score > best) {
+            best = score;
+            found = true;
+        }
+    }
+
+    if (!found)
+        return false;
+
+    std::ostringstream oss;
+    oss << best;
+    bestScore = oss.str();
+    return true;
+}
+
+int main(void) {
+    std::string scorePath = getScoreFilePath();
+    // Payload brut recu
+    std::string scoreLine;
+    // Ligne qui sera ecrite dans score.txt
+    std::string recordLine;
+    // Methode HTTP (GET, POST, ...)
     const char* method = std::getenv("REQUEST_METHOD");
+    const char* query = std::getenv("QUERY_STRING");
+    std::string queryString = query ? query : "";
+
+    // Mode recherche: GET /save-score.cgi?name=alice
+    if (method && std::strcmp(method, "GET") == 0) {
+        std::string wantedName = extractParam(queryString, "name");
+        std::string maybeScore = extractParam(queryString, "score");
+
+        if (!wantedName.empty() && maybeScore.empty()) {
+            std::string bestScore;
+            bool found = findBestScoreByName(scorePath, wantedName, bestScore);
+
+            std::cout << "Content-Type: text/plain\r\n";
+            std::cout << "Cache-Control: no-store\r\n";
+            std::cout << "Pragma: no-cache\r\n\r\n";
+
+            if (found)
+                std::cout << "name=" << wantedName << " score=" << bestScore << "\n";
+            else
+                std::cout << "name=" << wantedName << " score=not_found\n";
+            return 0;
+        }
+    }
 
     if (method && std::strcmp(method, "POST") == 0) {
         const char* lenStr = std::getenv("CONTENT_LENGTH");
@@ -119,13 +191,11 @@ int main(void) {
     }
 
     if (scoreLine.empty()) {
-        const char* query = std::getenv("QUERY_STRING");
         if (query)
             scoreLine = query;
     }
 
     // Ouverture du fichier score en mode app.
-    std::string scorePath = getScoreFilePath();
     std::ofstream scoreFile(scorePath.c_str(), std::ios::app);
     if (!scoreFile) {
         std::cerr << "[save-score.cgi] open failed path='" << scorePath

@@ -99,7 +99,7 @@ int main(void) {
     // Methode HTTP actuelle (GET, POST, ...)
     const char* method = std::getenv("REQUEST_METHOD");
 
-    if (method == "POST") {
+    if (std::strcmp(method, "POST") == 0) {
         const char* lenStr = std::getenv("CONTENT_LENGTH");
         int len = 0;
         if (lenStr)

@@ -367,7 +367,6 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
-	std::cout << file << std::endl;
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
 	file = server->root + path;

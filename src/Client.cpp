@@ -353,6 +353,16 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r = handleRequestResponse(server, 405, "405 Method Not Allowed", path);
 		return r;
 	}
+	if (loc && loc->redirectCode != 0) {
+		HttpResult r;
+		r.status = httpStatusToString(loc->redirectCode);
+		r.headers["Location"] = loc->redirectPath;
+		r.body = "";
+		r.contentType = "text/html";
+		r.contentLength = 0;
+		return r;
+	}
+
 	if (path == "/")
 		path = "/" + loc->index;
 	else if (isDirectory(server->root + path)) {
@@ -479,6 +489,15 @@ bool isDirectory(const std::string &path) {
 		return false;
 	return S_ISDIR(st.st_mode);
 }
+
+std::string httpStatusToString(int code) {
+    if (code == 301) return "301 Moved Permanently";
+    if (code == 302) return "302 Found";
+    if (code == 307) return "307 Temporary Redirect";
+    if (code == 308) return "308 Permanent Redirect";
+    return "302 Found";
+}
+
 
 void Client::debugRequest(const std::string &file) {
 	std::cout << "----- DEBUG REQUEST -----" << std::endl;

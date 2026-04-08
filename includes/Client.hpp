@@ -7,6 +7,7 @@ struct HttpResult {
 	std::string body;
 	std::string status;
 	std::string contentType;
+	std::map<std::string, std::string> headers;
 	size_t		contentLength;
 };
 
@@ -52,7 +53,7 @@ class Client {
 		State				getState() const;
 		int					getFd() const;
 };
-
+std::string					httpStatusToString(int code);
 std::string					getContentType(const std::string &path);
 bool						isDirectory(const std::string &path);
 std::string					readFile(const std::string& path);

@@ -95,3 +95,8 @@ curl -X DELETE http://localhost:8080/uploads/img.png
 
 ### HEAD
 curl --head http://localhost:8080/images/fat.jpg
+
+### Redirections
+only headers: curl -v http://localhost:8080/old
+
+headers + body: curl -vL http://localhost:8080/old

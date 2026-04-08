@@ -198,17 +198,32 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 			std::string val = trim(line.substr(9));
 			loc.autoindex = (val == "on" || val == "on;");
 		}
-		else if (line.find("root") == 0) {
+		else if (line.find("root") == 0)
 			loc.root = trim(line.substr(4));
-		}
-		else if (line.find("index") == 0) {
+		else if (line.find("index") == 0)
 			loc.index = removeSemicolon(line.substr(5));
-		}
-		else if (line.find("cgi_extension") == 0) {
+		else if (line.find("cgi_extension") == 0)
 			loc.cgiExtension = trim(line.substr(13));
-		}
-		else if (line.find("cgi_path") == 0) {
+		else if (line.find("cgi_path") == 0)
 			loc.cgiPath = trim(line.substr(8));
+		else if (line.find("return") == 0) {
+			// Enlever "return"
+			std::string rest = trim(line.substr(6)); // enlève "return"
+
+			// Exemple : "301 /new;"
+			size_t spacePos = rest.find(' ');
+			if (spacePos == std::string::npos)
+				throw std::runtime_error("Invalid return directive");
+
+			std::string codeStr = rest.substr(0, spacePos);
+			std::string path = trim(rest.substr(spacePos + 1));
+
+			// Enlever le ';' final
+			if (!path.empty() && path[path.size() - 1] == ';')
+				path.erase(path.size() - 1);
+
+			loc.redirectCode = atoi(codeStr.c_str());
+			loc.redirectPath = path;
 		}
 		else {
 			throw std::runtime_error("Error: unknown directive in location block: '" + line + "'");

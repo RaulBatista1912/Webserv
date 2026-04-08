@@ -97,7 +97,7 @@ int main(void) {
     std::string recordLine;
 
     // Methode HTTP actuelle (GET, POST, ...)
-    const char* method = std::getenv("REQUEST_METHOD");
+    std::string method = std::getenv("REQUEST_METHOD");
 
     if (method == "POST") {
         const char* lenStr = std::getenv("CONTENT_LENGTH");

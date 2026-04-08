@@ -154,48 +154,66 @@ HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* ser
 
 
 HttpResult Client::handleUpload(const std::string& path, const ServerConfig* server, const Location* loc) {
-	std::string contentType = _request.getHeader("Content-Type");
-	std::string body = _request.getBody();
+	HttpResult r;
 
 	if (!loc->allowPost)
 		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-	// Vérif taille max
+
+	std::string contentType = _request.getHeader("Content-Type");
+	std::string body = _request.getBody();
+
 	if (body.size() > static_cast<size_t>(server->max_body_size))
 		return handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
 
-	// 1) Boundary
+	// 1) Récupérer le boundary
 	size_t pos = contentType.find("boundary=");
+	if (pos == std::string::npos)
+		return handleRequestResponse(server, 400, "400 Bad Request", path);
+
 	std::string boundary = "--" + contentType.substr(pos + 9);
 
-	// 2) Première partie
-	size_t start = body.find(boundary);
-	start += boundary.size() + 2;
+	// 2) Trouver le début de la première partie
+	size_t partStart = body.find(boundary);
+	if (partStart == std::string::npos)
+		return handleRequestResponse(server, 400, "400 Bad Request", path);
+	partStart += boundary.size() + 2; // sauter boundary + CRLF
 
-	// 3) Headers de la partie
-	size_t headerEnd = body.find("\r\n\r\n", start);
-	std::string headers = body.substr(start, headerEnd - start);
+	// 3) Trouver la fin des headers internes
+	size_t headerEnd = body.find("\r\n\r\n", partStart);
+	if (headerEnd == std::string::npos)
+		return handleRequestResponse(server, 400, "400 Bad Request", path);
 
-	// 4) Filename
+	std::string headers = body.substr(partStart, headerEnd - partStart);
+
+	// 4) Extraire le filename
 	size_t fn = headers.find("filename=\"");
+	if (fn == std::string::npos)
+		return handleRequestResponse(server, 400, "400 Bad Request", path);
 	fn += 10;
-	size_t end = headers.find("\"", fn);
-	std::string filename = headers.substr(fn, end - fn);
+	size_t fnEnd = headers.find("\"", fn);
+	std::string filename = headers.substr(fn, fnEnd - fn);
 
-	// 5) Contenu du fichier
+	// 5) Début du fichier
 	size_t fileStart = headerEnd + 4;
-	size_t fileEnd = body.find(boundary, fileStart) - 2;
+
+	// 6) Trouver le boundary final EXACT
+	std::string endBoundary = "\r\n" + boundary + "--";
+	size_t fileEnd = body.find(endBoundary, fileStart);
+	if (fileEnd == std::string::npos)
+		return handleRequestResponse(server, 400, "400 Bad Request", path);
+	// 7) Extraire les octets du fichier
 	std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
 
-	// 6) Construire le chemin final
+	// 8) Construire le chemin final
 	std::string filepath = server->root + path + "/" + filename;
 
 	int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (fd < 0)
 		return handleRequestResponse(server, 404, "404 Not Found", path);
-	if (isDirectory(filepath))
-		return handleRequestResponse(server, 403, "403 Forbidden", path);
-	write(fd, fileContent.c_str(), fileContent.size());
+
+	write(fd, fileContent.data(), fileContent.size());
 	close(fd);
+
 	return handleRequestResponse(server, 201, "201 Created", path);
 }
 
@@ -319,8 +337,6 @@ HttpResult Client::handleAutoindex(const ServerConfig* server, std::string& path
 
 		html << "<li><a href=\"" << href << "\">" << name << "</a></li>";
 	}
-	std::cout << html.str() << std::endl;
-
 	closedir(dir);
 	html << "</ul></body></html>";
 
@@ -438,6 +454,9 @@ bool Client::readFromSocket() {
 		return true;
 	size_t body_len = 0;
 	std::string headers = _readBuffer.substr(0, header_end + 4);
+	if (header_end == std::string::npos)
+    	return true; // attendre headers complets
+	// ensuite seulement parser les headers
 	std::map<std::string, std::string> h = _request.extractHeaders(headers);
 	if (h.count("Content-Length"))
 		body_len = std::atoi(h["Content-Length"].c_str());
@@ -491,11 +510,11 @@ bool isDirectory(const std::string &path) {
 }
 
 std::string httpStatusToString(int code) {
-    if (code == 301) return "301 Moved Permanently";
-    if (code == 302) return "302 Found";
-    if (code == 307) return "307 Temporary Redirect";
-    if (code == 308) return "308 Permanent Redirect";
-    return "302 Found";
+	if (code == 301) return "301 Moved Permanently";
+	if (code == 302) return "302 Found";
+	if (code == 307) return "307 Temporary Redirect";
+	if (code == 308) return "308 Permanent Redirect";
+	return "302 Found";
 }
 
 

@@ -159,9 +159,6 @@ HttpResult Client::handleUpload(const std::string& path, const ServerConfig* ser
 
 	if (!loc->allowPost)
 		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-	// Vérif taille max
-	if (body.size() > static_cast<size_t>(server->max_body_size))
-		return handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
 
 	// 1) Boundary
 	size_t pos = contentType.find("boundary=");
@@ -385,7 +382,7 @@ HttpResult Client::handleGET(std::string& path, const ServerConfig* server, cons
 	return r;
 }
 
-std::string Client::handleRequest() {
+std::string Client::handleRequest(size_t body_len) {
 	Response res;
 	HttpResult r;
 	std::string method = _request.getMethod();
@@ -398,8 +395,11 @@ std::string Client::handleRequest() {
 	//std::cout << loc << std::endl;
 
 	//debug
-	//debugRequest(server->root + path);
-	if (method == "GET")
+	debugRequest(server->root + path);
+
+	if ((int)body_len > server->max_body_size)
+		r = handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
+	else if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
@@ -441,7 +441,7 @@ bool Client::readFromSocket() {
 		_state = WRITING;
 		return true;
 	}
-	_writeBuffer = handleRequest();
+	_writeBuffer = handleRequest(body_len);
 	_state = WRITING;
 	return true;
 }
@@ -522,5 +522,5 @@ std::string getContentType(const std::string &path)
 		return "image/jpeg";
 	if (path.find(".gif") != std::string::npos)
 		return "image/gif";
-	return "text/plain";
+	return "text/html";
 }

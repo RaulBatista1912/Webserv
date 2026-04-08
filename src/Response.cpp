@@ -9,6 +9,7 @@ std::string Response::buildResponse(HttpResult r) {
 	ss << r.contentLength;
 	std::string len = ss.str();
 	std::string response = "HTTP/1.1 " + r.status + "\r\n"
+			"Location: "+ r.headers["Location"] +"\r\n"
 			"Content-Length: "+ len +"\r\n"
 			"Connection: close\r\n"
 			"Content-Type: " + r.contentType +"\r\n"

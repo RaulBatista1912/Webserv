@@ -44,8 +44,6 @@ class Client {
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
-		std::string			readErrorPage(const ServerConfig& server, int code);
-	HttpResult				handleRequestResponse(const ServerConfig* server, int code, const std::string& err, const std::string& path);
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 
 		// Getters Setters
@@ -53,8 +51,4 @@ class Client {
 		State				getState() const;
 		int					getFd() const;
 };
-std::string					httpStatusToString(int code);
-std::string					getContentType(const std::string &path);
-bool						isDirectory(const std::string &path);
-std::string					readFile(const std::string& path);
 //Goal: To handle the client's connection

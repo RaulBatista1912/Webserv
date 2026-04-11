@@ -9,7 +9,9 @@ class Response {
 		std::vector<std::string> setCookies;
 		std::string _body;
 	public:
-		std::string buildResponse(HttpResult r);
+		std::string	buildResponse(HttpResult r);
+		HttpResult	handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path);
+		std::string	readErrorPage(const ServerConfig& server, int code);
 		Response();
 		~Response();
 };

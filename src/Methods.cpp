@@ -15,7 +15,7 @@ std::string	Client::handleRequest(size_t body_len) {
 	//std::cout << loc << std::endl;
 
 	//debug poce bleu
-	debugRequest(server->root + path);
+	//debugRequest(server->root + path);
 
 	if ((int)body_len > server->max_body_size)
 		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large", path);

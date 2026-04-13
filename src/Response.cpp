@@ -6,71 +6,52 @@ Response::Response() {}
 Response::~Response() {}
 
 std::string Response::buildResponse(HttpResult r) {
-    std::stringstream ss;
-    ss << r.contentLength;
+	std::stringstream ss;
+	ss << r.contentLength;
 
-    std::string response = "HTTP/1.1 " + r.status + "\r\n";
+	std::string response = "HTTP/1.1 " + r.status + "\r\n";
 
-    // Server
-    response += "Server: webserv/1.0\r\n";
+	// Server
+	response += "Server: webserv/1.0\r\n";
 
-    // Date (format HTTP)
-    time_t now = time(NULL);
-    char dateBuf[128];
-    struct tm *gmt = gmtime(&now);
-    strftime(dateBuf, sizeof(dateBuf), "%a, %d %b %Y %H:%M:%S GMT", gmt);
-    response += std::string("Date: ") + dateBuf + "\r\n";
+	// Date (format HTTP)
+	time_t now = time(NULL);
+	char dateBuf[128];
+	struct tm *gmt = gmtime(&now);
+	strftime(dateBuf, sizeof(dateBuf), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	response += std::string("Date: ") + dateBuf + "\r\n";
 
-    // Location (uniquement si présent)
-    if (r.headers.count("Location") && !r.headers["Location"].empty()) {
-        response += "Location: " + r.headers["Location"] + "\r\n";
-    }
+	// Location (uniquement si présent)
+	if (r.headers.count("Location") && !r.headers["Location"].empty()) {
+		response += "Location: " + r.headers["Location"] + "\r\n";
+	}
 
-    // Content-Length + Content-Type
-    response += "Content-Length: " + ss.str() + "\r\n";
-    response += "Content-Type: " + r.contentType + "\r\n";
+	// Content-Length + Content-Type
+	response += "Content-Length: " + ss.str() + "\r\n";
+	response += "Content-Type: " + r.contentType + "\r\n";
 
-    // Connection
-    if (r.headers.count("Connection"))
-        response += "Connection: " + r.headers["Connection"] + "\r\n";
-    else
-        response += "Connection: close\r\n";
+	// Connection
+	if (r.headers.count("Connection"))
+		response += "Connection: " + r.headers["Connection"] + "\r\n";
+	else
+		response += "Connection: close\r\n";
 
-    // Autres headers
-    for (std::map<std::string, std::string>::iterator it = r.headers.begin();
-         it != r.headers.end(); ++it)
-    {
-        if (it->first != "Location" && it->first != "Connection")
-            response += it->first + ": " + it->second + "\r\n";
-    }
+	// Autres headers
+	for (std::map<std::string, std::string>::iterator it = r.headers.begin();
+		 it != r.headers.end(); ++it)
+	{
+		if (it->first != "Location" && it->first != "Connection")
+			response += it->first + ": " + it->second + "\r\n";
+	}
 
-    // Fin des headers
-    response += "\r\n";
+	// Fin des headers
+	response += "\r\n";
 
-    // Body
-    response += r.body;
+	// Body
+	response += r.body;
 
-    return response;
+	return response;
 }
-
-
-// std::string	Response::buildResponse(HttpResult r) {
-// 	std::stringstream ss;
-// 	ss << r.contentLength;
-// 	std::string len = ss.str();
-// 	std::string response = "HTTP/1.1 " + r.status + "\r\n"
-// 			"Location: "+ r.headers["Location"] +"\r\n"
-// 			"Content-Length: "+ len +"\r\n"
-// 			"Connection: close\r\n"
-// 			"Content-Type: " + r.contentType +"\r\n"
-// 			"\r\n"
-// 			+ r.body;
-// 	//debug
-// 	// std::cout << "----- DEBUG RESPONSE -----" << std::endl;
-// 	// std::cout << response << std::endl;
-// 	// std::cout << "----------END RESPONSE---------------\n" << std::endl;
-// 	return (response);
-// }
 
 std::string	Response::readErrorPage(const ServerConfig& server, int code) {
 	std::map<int, std::string>::const_iterator it = server.errorPages.find(code);

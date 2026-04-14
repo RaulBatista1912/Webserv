@@ -5,7 +5,8 @@
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
+Client::Client(int fd, Config& config, Server* server):
+_fd(fd), _state(READING), _config(config), _server(server){}
 
 Client::~Client() {
 	if (_fd >= 0)

@@ -39,6 +39,10 @@ const std::string& Server::getRoot() const {
 	return (_root);
 }
 
+SessionManager& Server::getSessionManager() {
+	return _sessionManager;
+}
+
 int Server::acceptClient() const {
 	return (accept(_fd, NULL, NULL));
 }

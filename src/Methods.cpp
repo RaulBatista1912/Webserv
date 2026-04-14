@@ -17,6 +17,22 @@ std::string	Client::handleRequest(size_t body_len) {
 	//debug poce bleu
 	//debugRequest(server->root + path);
 
+	SessionManager& sm = _server->getSessionManager();
+	bool created = false;
+	std::string sid = _request.getCookie("session_id");
+
+	Session& session = sm.getOrCreateSession(sid, created);
+
+	// exemple compteur
+	int visits = 0;
+	if (session.data.find("visits") != session.data.end())
+		visits = std::atoi(session.data["visits"].c_str());
+
+	visits++;
+
+	std::ostringstream vs;
+	vs << visits;
+	session.data["visits"] = vs.str();
 	if ((int)body_len > server->max_body_size)
 		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
 	else if (method == "GET")

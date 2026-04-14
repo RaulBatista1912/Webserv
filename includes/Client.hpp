@@ -2,6 +2,8 @@
 #include "Header.hpp"
 #include "Request.hpp"
 #include "Config.hpp"
+#include "Session.hpp"
+#include "Server.hpp"
 
 struct HttpResult {
 	std::string body;
@@ -27,9 +29,10 @@ class Client {
 		std::string			_queryString;
 		Request				_request;
 		Config&				_config;
+		Server*				_server;
 
 	public:
-		Client(int fd, Config& config);	// open the connexion
+		Client(int fd, Config& config, Server* server);	// open the connexion
 		~Client();									// close the connexion
 
 		// Public methods

@@ -57,3 +57,7 @@ std::string SessionManager::generateSessionId() {
         << rand();
     return oss.str();
 }
+
+bool Session::isExpired(time_t now, time_t ttl) const {
+	return (now - lastAccess) > ttl;
+}

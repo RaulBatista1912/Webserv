@@ -133,10 +133,10 @@ void Request::parseCookies() {
 	}
 }
 
-const std::string& Request::getCookie(const std::string& name) const {
+const std::string Request::getCookie(const std::string& name) const {
 	std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
 	if (it == _cookies.end())
-		return NULL;
+		return "";
 	return it->second;
 }
 

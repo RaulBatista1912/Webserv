@@ -110,13 +110,13 @@ int main(int ac, char** av)
 	}
 	for (size_t i = 0; i < servers.size(); i++)
 			delete (servers[i]);
-		for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
-			close(it->first);
-			delete (it->second);
-		}
-		servers.clear();
-		clients.clear();
-		fds.clear();
+	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+		close(it->first);
+		delete (it->second);
+	}
+	servers.clear();
+	clients.clear();
+	fds.clear();
 	return 0;
 }
 // Goal:

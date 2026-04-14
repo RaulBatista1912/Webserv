@@ -1,11 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
+    <link rel="stylesheet" href="tetris.css">
 </head>
 <body>
-    <h1>Tetris</h1>
-    <canvas id="game" width="240" height="400"></canvas>
+    <main class="layout">
+        <section class="game-panel">
+            <header>
+                <p class="eyebrow">Arcade Challenge</p>
+                <h1>Tetris</h1>
+            </header>
+            <canvas id="game" width="200" height="400"></canvas>
+            <p id="status" class="status"></p>
+        </section>
+
+        <aside class="hud">
+            <article class="card">
+                <p class="label">Score</p>
+                <p id="score" class="value">0</p>
+            </article>
+            <article class="card search-card">
+                <p class="label">Search Player</p>
+                <input id="search-name" class="search-input" type="text" placeholder="Player name">
+                <button id="search-btn" class="search-btn" type="button">Find score</button>
+                <p id="search-result" class="search-result">Type a name and click.</p>
+            </article>
+            <button id="restart" class="restart" type="button">Restart</button>
+        </aside>
+    </main>
 
     <script src="game.js"></script>
 </body>

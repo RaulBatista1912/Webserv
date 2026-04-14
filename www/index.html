@@ -16,27 +16,18 @@
 		<section class="card">
 			<img src="images/rat.jpg" alt="chips" class="hero-image">
 			<!--POST TEXT--------->
-			<form action="/test.txt" method="post" class="glorp-form">
-					<label for="glo">glorp ?</label>
-				<input 
-					type="text"
-					id="glo"
-					name="glo"
-					placeholder="ékri frr"
-					required
-				>
-				<div class="actions">
-					<button type="submit" class="main-button">POST</button>
-					<button type="submit" formmethod="get" formaction="/index.html" class="main-button secondary">GET</button>
-				</div>
-			</form>
+			<audio controls>
+			<source src="music/spongebob.mp3" type="audio/ogg">
+			<source src="music/spongebob.mp3" type="audio/mpeg">
+			Your browser does not support the audio element.
+			</audio>
+			<!-- BOUTON VERS /uploads -->
+			<div style="text-align: center; margin: 40px 0;">
+				<a href="/uploads/" class="main-button upload-button">Accéder aux uploads</a>
+			</div>
 			<!--UPLOAD FILES------->
-			<form action="/uploads" method="post" enctype="multipart/form-data" class="glorp-form">
-				<input type="file" name="file">
-				<button type="submit" class="main-button">Upload</button>
-			</form>
 			<div class="extra-actions">
-				<button type="button" class="main-button secondary">dede</button>
+				<button type="button" class="main-button secondary">PROUT</button>
 				<a href="/images/rat.jpg" download class="main-button link-button">Download rat</a>
 			</div>
 			<a href="http://www.savewalterwhite.com/" target="_blank" rel="noopener noreferrer">

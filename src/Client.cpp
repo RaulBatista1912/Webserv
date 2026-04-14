@@ -1,169 +1,30 @@
 #include "../includes/Client.hpp"
 #include "../includes/Response.hpp"
 #include "../includes/ServerConfig.hpp"
+#include "../includes/Utils.hpp"
 #include <iostream>
 #include <cstdlib>
 
-Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
+// Parse la request-line brute
+static std::string extractQueryFromRequestLine(const std::string& rawRequest) {
+	size_t lineEnd = rawRequest.find("\r\n");
+	if (lineEnd == std::string::npos)
+		return "";
+	std::string requestLine = rawRequest.substr(0, lineEnd);
 
-Client::~Client() {
-	if (_fd >= 0)
-		close(_fd);
+	size_t firstSpace = requestLine.find(' ');
+	if (firstSpace == std::string::npos)
+		return "";
+	size_t secondSpace = requestLine.find(' ', firstSpace + 1);
+	if (secondSpace == std::string::npos)
+		return "";
+
+	std::string target = requestLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
+	size_t qPos = target.find('?');
+	if (qPos == std::string::npos)
+		return "";
+	return target.substr(qPos + 1);
 }
-
-// Public methods
-HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server, const Location* loc)
-{
-	HttpResult r;
-	(void)loc;
-	std::string fullPath = server->root + _request.getPath();
-
-	int pipefd[2];
-	if (pipe(pipefd) == -1) {
-		r.status = "500 Internal Server Error";
-		r.body = "pipe error";
-		return r;
-	}
-	pid_t pid = fork();
-	if (pid == 0) {		//ENFANT
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[0]);
-		close(pipefd[1]);
-
-		// recupere la variable apres le ? pour la fournir au cgi;
-		std::string query = "";
-		size_t pos = _request.getPath().find("?");
-		if (pos != std::string::npos)
-			query = _request.getPath().substr(pos + 1);
-
-		setenv("QUERY_STRING", query.c_str(), 1);
-
-		char *argv[] = {(char *)fullPath.c_str(), NULL};
-		execve(fullPath.c_str(), argv, NULL);
-		exit(1);
-	}
-	else {
-		// PARENT
-		close(pipefd[1]);
-		char buffer[4096];
-		std::string output;
-		int bytes = 0;
-
-		while ((bytes = read(pipefd[0], buffer, sizeof(buffer))) > 0) // envoie la rep
-			output.append(buffer, bytes);
-		close(pipefd[0]);
-		waitpid(pid, NULL, 0);
-
-		r.status = "200 OK";
-		r.body = output;
-		r.contentType = getContentType(path);
-		return r;
-	}
-}
-
-HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc)
-{
-	// 1. Vérifier si DELETE est autorisé
-	if (loc && !loc->allowDelete)
-		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-
-	// 2. Construire le chemin réel
-	const std::string completePath = server->root + path;
-
-	// 3. Sécurité basique
-	if (completePath.find("..") != std::string::npos && isDirectory(completePath))
-		return handleRequestResponse(server, 403, "403 Forbidden", path);
-
-	// 5. Vérifier si le fichier existe
-	if (0 < access(completePath.c_str(), F_OK) || 0 < access(completePath.c_str(), W_OK))
-		return handleRequestResponse(server, 404, "404 Not Found", path);
-
-	// 6. Supprimer
-	if (std::remove(completePath.c_str()) != 0)
-		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
-
-	// 7. Succès
-	return handleRequestResponse(server, 204, "204 No Content", path);
-}
-
-
-HttpResult Client::handleUpload(const std::string& path, const ServerConfig* server, const Location* loc) {
-	std::string contentType = _request.getHeader("Content-Type");
-	std::string body = _request.getBody();
-
-	if (!loc->allowPost)
-		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-	// Vérif taille max
-	if (body.size() > static_cast<size_t>(server->max_body_size))
-		return handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
-
-	// 1) Boundary
-	size_t pos = contentType.find("boundary=");
-	std::string boundary = "--" + contentType.substr(pos + 9);
-
-	// 2) Première partie
-	size_t start = body.find(boundary);
-	start += boundary.size() + 2;
-
-	// 3) Headers de la partie
-	size_t headerEnd = body.find("\r\n\r\n", start);
-	std::string headers = body.substr(start, headerEnd - start);
-
-	// 4) Filename
-	size_t fn = headers.find("filename=\"");
-	fn += 10;
-	size_t end = headers.find("\"", fn);
-	std::string filename = headers.substr(fn, end - fn);
-
-	// 5) Contenu du fichier
-	size_t fileStart = headerEnd + 4;
-	size_t fileEnd = body.find(boundary, fileStart) - 2;
-	std::string fileContent = body.substr(fileStart, fileEnd - fileStart);
-
-	// 6) Construire le chemin final
-	std::string filepath = server->root + path + "/" + filename;
-
-	int fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-	if (fd < 0)
-		return handleRequestResponse(server, 404, "404 Not Found", path);
-	if (isDirectory(filepath))
-		return handleRequestResponse(server, 403, "403 Forbidden", path);
-	write(fd, fileContent.c_str(), fileContent.size());
-	close(fd);
-	return handleRequestResponse(server, 201, "201 Created", path);
-}
-
-HttpResult Client::handlePOST(const std::string& path, const ServerConfig* server, const Location* loc) {
-
-	std::string contentType = _request.getHeader("Content-Type");
-	if (!loc->allowPost)
-		return handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-	// Si c'est un upload → déléguer
-	if (contentType.find("multipart/form-data") != std::string::npos)
-		return handleUpload(path, server, loc);
-
-	// Sinon POST normal (form-urlencoded ou body simple depuis curl)
-	std::string body = _request.getBody();
-	std::string value;
-
-	size_t pos = body.find('=');
-	if (pos != std::string::npos)
-		value = body.substr(pos + 1);
-	else
-		value = body;
-	std::string completePath = server->root + path;
-	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
-		return handleRequestResponse(server, 403, "403 Forbidden", path);
-
-	std::ofstream out(completePath.c_str(), std::ios::binary);
-	if (!out)
-		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
-
-	out.write(value.c_str(), value.size());
-	out.close();
-	return handleRequestResponse(server, 201, "201 Created", path);
-}
-
 
 const ServerConfig*	Client::findServer() const {
 	const std::vector<ServerConfig>& servers = _config.getServers();
@@ -189,129 +50,54 @@ const ServerConfig*	Client::findServer() const {
 	return &servers[0];
 }
 
-std::string	Client::readErrorPage(const ServerConfig& server, int code) {
-	std::map<int, std::string>::const_iterator it = server.errorPages.find(code);
-
-	if (it != server.errorPages.end()) {
-		std::string filePath = server.root + "/" + it->second;
-
-		std::ifstream file(filePath.c_str(), std::ios::binary);
-		if (file) {
-			std::stringstream buffer;
-			buffer << file.rdbuf();
-			return buffer.str();
-		}
-	}
-	return "<h1>Error</h1>";
-}
-
-HttpResult Client::handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path) {
-	HttpResult r;
-
-	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end()) 
-		r.body = readErrorPage(*server, code);
-	else
-		r.body = "<h1>" + status + "<h1>";
-	r.status = status;
-	r.contentType = getContentType(path);
-	return r;
-}
-
-HttpResult Client::handleAutoindex(const ServerConfig* server, std::string path) {
-	HttpResult r;
+HttpResult	Client::handleAutoindex(const ServerConfig* server, std::string& path) {
+	HttpResult	r;
+	Response	res;
 	std::stringstream html;
 
+	// Construire le chemin réel sur le disque
+	if (path[path.size() - 1] != '/')
+		path += '/';
+	std::string realPath = server->root + path;
+
+	// Début du HTML
 	html << "<html><head><title>Index of " << path << "</title></head><body>";
 	html << "<h1>Index of " << path << "</h1><ul>";
 
-	DIR* dir = opendir(path.c_str());
-	if (dir == NULL) {
-		return handleRequestResponse(server, 500, "500 Internal Server Error", path);
+	DIR* dir = opendir(realPath.c_str());
+	if (!dir) {
+		return res.handleRequestResponse(server, 500, "500 Internal Server Error", path);
 	}
+
 	struct dirent* entry;
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		// ignorer "." et ".."
+
 		if (name == "." || name == "..")
 			continue;
 
-		html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+		// Toujours forcer un slash final
+		std::string href = path;
+		if (href.empty() || href[href.size() - 1] != '/')
+			href += '/';
+
+		href += name;
+
+		html << "<li><a href=\"" << href << "\">" << name << "</a></li>";
 	}
 	closedir(dir);
 	html << "</ul></body></html>";
-	r.body = html.str();
+
+	// Construire la réponse HTTP
 	r.status = "200 OK";
+	r.body = html.str();
 	r.contentType = "text/html";
+	r.contentLength = r.body.size();
+
 	return r;
 }
 
-HttpResult Client::handleGET(std::string& path, const ServerConfig* server, const Location* loc) {
-	HttpResult r;
-	std::string file;
-
-	if (path.find("..") != std::string::npos) {
-		r = handleRequestResponse(server, 403, "403 Forbidden", path);
-		return r;
-	}
-	if (loc && !loc->allowGet) {
-		r = handleRequestResponse(server, 405, "405 Method Not Allowed", path);
-		return r;
-	}
-	if (path == "/")
-		path = "/" + server->index;
-	else if (isDirectory(server->root + path)) {
-		if (loc->autoindex) {
-			r = handleAutoindex(server, server->root + path);
-			return r;
-		}
-		else {
-			r = handleRequestResponse(server, 403, "403 Forbidden", path);
-			return r;
-		}
-	}
-	file = server->root + path;
-	if (path.find(".cgi") != std::string::npos)
-		return handleCGI(path, server, loc);
-	std::ifstream webPage(file.c_str(), std::ios::binary);
-	if (webPage) {
-		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
-		std::stringstream buffer;
-		buffer << webPage.rdbuf();
-		r.status = "200 OK";
-		r.contentType = getContentType(path);
-		r.body = buffer.str();
-	}
-	else
-		r = handleRequestResponse(server, 404, "404 Not Found", path);
-	return r;
-}
-
-std::string Client::handleRequest() {
-	Response res;
-	HttpResult r;
-	std::string method = _request.getMethod();
-	//std::cout << method << std::endl;
-	std::string path = _request.getPath();
-	//std::cout << path << std::endl;
-	const ServerConfig* server = findServer();
-	//std::cout << server->port << std::endl;
-	const Location* loc = server->findLocation(path);
-	//std::cout << loc << std::endl;
-
-	//debug
-	//debugRequest(server->root + path);
-	if (method == "GET")
-		r = handleGET(path, server, loc);
-	else if (method == "POST")
-		r = handlePOST(path, server, loc);
-	else if (method == "DELETE")
-		r = handleDELETE(path, server, loc);
-	else
-		r = handleRequestResponse(server, 501, "501 Not Implemented", path);
-	return res.buildResponse(r.status, r.body, r.contentType);
-}
-
-bool Client::readFromSocket() {
+bool	Client::readFromSocket() {
 	char buffer[4096];
 	int bytes = recv(_fd, buffer, sizeof(buffer), 0);
 
@@ -323,25 +109,32 @@ bool Client::readFromSocket() {
 		return true;
 	size_t body_len = 0;
 	std::string headers = _readBuffer.substr(0, header_end + 4);
+	if (header_end == std::string::npos)
+		return true; // attendre headers complets
+	// ensuite seulement parser les headers
 	std::map<std::string, std::string> h = _request.extractHeaders(headers);
 	if (h.count("Content-Length"))
 		body_len = std::atoi(h["Content-Length"].c_str());
 	if (_readBuffer.size() < header_end + 4 + body_len)
 		return true;
+	// Sauvegarde la query brute avant _request.parse(), qui supprime '?...'.
+	_queryString = extractQueryFromRequestLine(_readBuffer);
 	if (!_request.parse(_readBuffer)) {
 		Response res;
-		_writeBuffer = res.buildResponse("400 Bad Request",
-										"<h1>400 Bad Request</h1>",
-										"text/html");
+		HttpResult r;
+		r.status = "400 Bad Request";
+		r.body = "<h1>400 Bad Request</h1>";
+		r.contentType = "text/html";
+		_writeBuffer = res.buildResponse(r);
 		_state = WRITING;
 		return true;
 	}
-	_writeBuffer = handleRequest();
+	_writeBuffer = handleRequest(body_len);
 	_state = WRITING;
 	return true;
 }
 
-bool Client::writeToSocket() {
+bool	Client::writeToSocket() {
 	if (_writeBuffer.empty()) {
 		_state = CLOSED;
 		return (false);
@@ -357,21 +150,7 @@ bool Client::writeToSocket() {
 	return (true);
 }
 
-std::string readFile(const std::string& path) {
-	std::ifstream file(path.c_str());
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return buffer.str();
-}
-
-bool isDirectory(const std::string &path) {
-	struct stat st;
-	if (stat(path.c_str(), &st) == -1)
-		return false;
-	return S_ISDIR(st.st_mode);
-}
-
-void Client::debugRequest(const std::string &file) {
+void	Client::debugRequest(const std::string &file) {
 	std::cout << "----- DEBUG REQUEST -----" << std::endl;
 	std::cout << "New client fd=" << _fd << std::endl;
 	std::cout << "Method:  " << _request.getMethod() << std::endl;
@@ -390,6 +169,14 @@ void Client::debugRequest(const std::string &file) {
 	std::cout << "----------END REQUEST---------------\n" << std::endl;
 }
 
+// Public methods
+Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
+
+Client::~Client() {
+	if (_fd >= 0)
+		close(_fd);
+}
+
 // Getters Setters
 void	Client::setState(State s) {
 	_state = s;
@@ -401,21 +188,4 @@ Client::State Client::getState() const {
 
 int Client::getFd() const {
 	return (_fd);
-}
-
-std::string getContentType(const std::string &path)
-{
-	if (path.find(".html") != std::string::npos)
-		return "text/html";
-	if (path.find(".css") != std::string::npos)
-		return "text/css";
-	if (path.find(".js") != std::string::npos)
-		return "application/javascript";
-	if (path.find(".png") != std::string::npos)
-		return "image/png";
-	if (path.find(".jpg") != std::string::npos)
-		return "image/jpeg";
-	if (path.find(".gif") != std::string::npos)
-		return "image/gif";
-	return "text/plain";
 }

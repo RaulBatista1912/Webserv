@@ -50,12 +50,12 @@ void SessionManager::cleanupExpired() {
 }
 
 std::string SessionManager::generateSessionId() {
-    std::ostringstream oss;
-    oss << time(NULL) << "_"
-        << rand() << "_"
-        << rand() << "_"
-        << rand();
-    return oss.str();
+	std::ostringstream oss;
+	oss << time(NULL) << "_"
+		<< rand() << "_"
+		<< rand() << "_"
+		<< rand();
+	return oss.str();
 }
 
 bool Session::isExpired(time_t now, time_t ttl) const {

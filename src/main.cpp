@@ -6,6 +6,15 @@
 #include "../includes/Client.hpp"
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
+#include <csignal>
+
+volatile sig_atomic_t g_running = 1;
+
+void handleSignal(int sig)
+{
+	(void)sig;
+	g_running = 0;
+}
 
 int main(int ac, char** av)
 {
@@ -13,12 +22,14 @@ int main(int ac, char** av)
 		std::cerr << "Usage: ./webserv <config_file>\n";
 		return 1;
 	}
+	std::signal(SIGINT, handleSignal);
+	std::signal(SIGTERM, handleSignal);
+	std::vector<Server*> servers;
+	std::map<int, Client*> clients;
+	std::vector<pollfd> fds;
 	try {
 		Config config(av[1]);
 		const std::vector<ServerConfig>& serverConfigs = config.getServers();
-		std::vector<Server*> servers;
-		std::vector<pollfd> fds;
-		std::map<int, Client*> clients;
 
 		// creer un serveur pour chaque port,
 		for (size_t i = 0; i < serverConfigs.size(); ++i) {
@@ -33,7 +44,7 @@ int main(int ac, char** av)
 
 			std::cout << "Listening on port " << serverConfigs[i].port << std::endl; // on afficher que le serv est pret sur ce port
 		}
-		while (true) {
+		while (g_running) {
 			// polling
 			if (poll(&fds[0], fds.size(), -1) < 0)
 				throw std::runtime_error("poll failed");
@@ -95,8 +106,17 @@ int main(int ac, char** av)
 		}
 	}
 	catch (const std::exception& e) {
-		std::cerr << "Error: " << e.what() << std::endl;
+		std::cerr << "\nError: " << e.what() << std::endl;
 	}
+	for (size_t i = 0; i < servers.size(); i++)
+			delete (servers[i]);
+	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+		close(it->first);
+		delete (it->second);
+	}
+	servers.clear();
+	clients.clear();
+	fds.clear();
 	return 0;
 }
 // Goal:

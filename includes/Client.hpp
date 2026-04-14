@@ -11,6 +11,8 @@ struct HttpResult {
 	std::string contentType;
 	std::map<std::string, std::string> headers;
 	size_t		contentLength;
+
+	HttpResult() : contentLength(0) {}
 };
 
 class Client {

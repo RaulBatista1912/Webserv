@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(root) {
-	_fd = socket(AF_INET, SOCK_STREAM, 0);
+	_fd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = protocol TCP, 0 = protocol TCP par default
 	if (_fd < 0)
 		throw std::runtime_error("socket failed");
 	int opt = 1;
@@ -13,7 +13,7 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 	sockaddr_in addr; // struct IPv4
 	std::memset(&addr, 0, sizeof(addr)); // initialise a 0
 	addr.sin_family = AF_INET; // IPv4
-	addr.sin_addr.s_addr = INADDR_ANY; // accepte toutes les interfaces reseau
+	addr.sin_addr.s_addr = INADDR_ANY; // accepte toutes les interfaces reseau, inet_addr("127.0.0.1") pour seulement localhost
 	addr.sin_port = htons(port); // definit port, htons() converti host -> network byte order
 
 	if (bind(_fd, (sockaddr*)&addr, sizeof(addr)) < 0) // associe le socket serveur a l'addresse IP + port

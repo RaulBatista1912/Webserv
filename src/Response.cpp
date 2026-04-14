@@ -81,3 +81,18 @@ HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code,
 	r.contentType = getContentType(path);
 	return r;
 }
+
+void Response::addSetCookie(const std::string& cookieLine) {
+	_setCookies.push_back(cookieLine);
+}
+
+std::string buildSessionCookie(const std::string& sessionId, int maxAge) {
+	std::ostringstream oss;
+	oss << "session_id=" << sessionId
+		<< "; Path=/"
+		<< "; HttpOnly"
+		<< "; SameSite=Lax";
+	if (maxAge > 0)
+		oss << "; Max-Age=" << maxAge;
+	return oss.str();
+}

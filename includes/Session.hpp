@@ -15,8 +15,8 @@ private:
 	time_t _ttl;
 
 public:
-	SessionManager(time_t ttl = 3600);
-
+	SessionManager();
+	~SessionManager();
 	Session* getSession(const std::string& sessionId);
 	Session& createSession();
 	Session& getOrCreateSession(const std::string& sessionId, bool& created);

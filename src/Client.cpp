@@ -5,6 +5,13 @@
 #include <iostream>
 #include <cstdlib>
 
+Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
+
+Client::~Client() {
+	if (_fd >= 0)
+		close(_fd);
+}
+
 // Parse la request-line brute
 static std::string extractQueryFromRequestLine(const std::string& rawRequest) {
 	size_t lineEnd = rawRequest.find("\r\n");
@@ -167,14 +174,6 @@ void	Client::debugRequest(const std::string &file) {
 	std::cout << _request.getBody() << std::endl;
 	std::cout << "\nServer is searching: " << file << std::endl;
 	std::cout << "----------END REQUEST---------------\n" << std::endl;
-}
-
-// Public methods
-Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
-
-Client::~Client() {
-	if (_fd >= 0)
-		close(_fd);
 }
 
 // Getters Setters

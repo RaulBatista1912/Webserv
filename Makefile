@@ -21,7 +21,8 @@ SRC         = $(SRC_DIR)/main.cpp \
 				$(SRC_DIR)/ServerConfig.cpp \
 				$(SRC_DIR)/Utils.cpp \
 				$(SRC_DIR)/Methods.cpp \
-				$(SRC_DIR)/Cgi.cpp
+				$(SRC_DIR)/Cgi.cpp \
+				$(SRC_DIR)/Session.cpp
 
 OBJ         = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 

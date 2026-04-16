@@ -2,10 +2,16 @@
 #include <map>
 #include <iostream>
 #include <cstdio>
+#include <cerrno>
 #include <poll.h>
 #include "../includes/Client.hpp"
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
+
+static bool isTemporaryAcceptError(int err)
+{
+	return (err == EINTR || err == EAGAIN || err == EWOULDBLOCK);
+}
 
 int main(int ac, char** av)
 {
@@ -53,8 +59,13 @@ int main(int ac, char** av)
 				}
 				// socket serveur, nouveau client qui arrive, on accepte
 				if (isServer && (fds[i].revents & POLLIN)) {
-					int clientFd = currentServer->acceptClient(); // on accepte
-					if (clientFd >= 0) {
+					while (true) {
+						int clientFd = currentServer->acceptClient(); // on accepte
+						if (clientFd < 0) {
+							if (isTemporaryAcceptError(errno))
+								break;
+							break;
+						}
 						Client* c = new Client(clientFd, config);
 						clients[clientFd] = c;
 
@@ -66,8 +77,11 @@ int main(int ac, char** av)
 					}
 				}
 				// socket client, lire ou ecrire avec le client
-				else if (fds[i].revents & (POLLIN | POLLOUT)) { // vrai si soit POLLIN, soit POLLOUT, soit les deux
+				else if (fds[i].revents & (POLLIN | POLLOUT | POLLERR | POLLHUP | POLLNVAL)) { // vrai si soit POLLIN, soit POLLOUT, soit les deux
 					Client* c = clients[fds[i].fd];
+					if (fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+						c->setState(Client::CLOSED);
+					}
 					// lecture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLIN) && !c->readFromSocket())// est-ce que la lecture du socket s'est bien passée ?
 						c->setState(Client::CLOSED);

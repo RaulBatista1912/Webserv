@@ -4,6 +4,8 @@
 #include "../includes/Utils.hpp"
 #include <iostream>
 #include <cstdlib>
+#include <cerrno>
+#include <fcntl.h>
 
 // Parse la request-line brute
 static std::string extractQueryFromRequestLine(const std::string& rawRequest) {
@@ -99,18 +101,29 @@ HttpResult	Client::handleAutoindex(const ServerConfig* server, std::string& path
 
 bool	Client::readFromSocket() {
 	char buffer[4096];
-	int bytes = recv(_fd, buffer, sizeof(buffer), 0);
-
-	if (bytes <= 0)
-		return false;
-	_readBuffer.append(buffer, bytes);
+	while (true) {
+		ssize_t bytes = recv(_fd, buffer, sizeof(buffer), 0);
+		if (bytes > 0) {
+			_readBuffer.append(buffer, bytes);
+			if (bytes < static_cast<ssize_t>(sizeof(buffer)))
+				break;
+		}
+		else if (bytes == 0) {
+			return false;
+		}
+		else {
+			if (errno == EINTR)
+				continue;
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
+			return false;
+		}
+	}
 	size_t header_end = _readBuffer.find("\r\n\r\n");
 	if (header_end == std::string::npos)
 		return true;
 	size_t body_len = 0;
 	std::string headers = _readBuffer.substr(0, header_end + 4);
-	if (header_end == std::string::npos)
-		return true; // attendre headers complets
 	// ensuite seulement parser les headers
 	std::map<std::string, std::string> h = _request.extractHeaders(headers);
 	if (h.count("Content-Length"))
@@ -139,12 +152,19 @@ bool	Client::writeToSocket() {
 		_state = CLOSED;
 		return (false);
 	}
-	ssize_t sent = send(_fd, _writeBuffer.c_str(), _writeBuffer.size(), 0);
-	if (sent <= 0) {
+	while (!_writeBuffer.empty()) {
+		ssize_t sent = send(_fd, _writeBuffer.c_str(), _writeBuffer.size(), 0);
+		if (sent > 0) {
+			_writeBuffer.erase(0, sent);
+			continue;
+		}
+		if (sent < 0 && errno == EINTR)
+			continue;
+		if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			break;
 		_state = CLOSED;
 		return (false);
 	}
-	_writeBuffer.erase(0, sent);
 	if (_writeBuffer.empty())
 		_state = CLOSED;
 	return (true);
@@ -170,7 +190,9 @@ void	Client::debugRequest(const std::string &file) {
 }
 
 // Public methods
-Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){}
+Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){
+	fcntl(_fd, F_SETFL, O_NONBLOCK);
+}
 
 Client::~Client() {
 	if (_fd >= 0)

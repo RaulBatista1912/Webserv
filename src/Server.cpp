@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
+#include <cerrno>
 #include <stdexcept>
 
 Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(root) {
@@ -10,6 +11,8 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 		throw std::runtime_error("socket failed");
 	int opt = 1;
 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
+		throw std::runtime_error("fcntl failed");
 	sockaddr_in addr; // struct IPv4
 	std::memset(&addr, 0, sizeof(addr)); // initialise a 0
 	addr.sin_family = AF_INET; // IPv4
@@ -18,7 +21,7 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 
 	if (bind(_fd, (sockaddr*)&addr, sizeof(addr)) < 0) // associe le socket serveur a l'addresse IP + port
 		throw std::runtime_error("bind failed");
-	if (listen(_fd, 10) < 0) // met le socket TCP en mode passif pour accepet des connexions et creer une gile d'attente des clients en attente
+	if (listen(_fd, SOMAXCONN) < 0) // met le socket TCP en mode passif pour accepet des connexions et creer une gile d'attente des clients en attente
 		throw std::runtime_error("listen failed");
 }
 

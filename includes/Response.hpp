@@ -10,7 +10,7 @@ class Response {
 		std::string _body;
 	public:
 		std::string	buildResponse(HttpResult r);
-		HttpResult	handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path);
+		HttpResult	handleRequestResponse(const ServerConfig* server, int code, const std::string& status);
 		std::string	readErrorPage(const ServerConfig& server, int code);
 		Response();
 		~Response();

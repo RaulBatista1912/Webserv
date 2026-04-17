@@ -13,9 +13,9 @@ class ServerConfig {
 
 		std::vector<Location>		locations;
 
-		ServerConfig() : port(-1),
+		ServerConfig() : port(1),
 						serverName("undefined"),
 						root("undefined"),
-						max_body_size(-1) {}
+						max_body_size(0) {}
 		const Location* findLocation(const std::string& path) const;
 };

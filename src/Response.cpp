@@ -69,7 +69,7 @@ std::string	Response::readErrorPage(const ServerConfig& server, int code) {
 	return "<h1>Error</h1>";
 }
 
-HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path) {
+HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code, const std::string& status) {
 	HttpResult r;
 
 	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
@@ -78,6 +78,6 @@ HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code,
 		r.body = "<h1>" + status + "<h1>";
 	r.status = status;
 	r.contentLength = r.body.size();
-	r.contentType = getContentType(path);
+	r.contentType = "text/html";
 	return r;
 }

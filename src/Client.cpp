@@ -66,7 +66,7 @@ HttpResult	Client::handleAutoindex(const ServerConfig* server, std::string& path
 
 	DIR* dir = opendir(realPath.c_str());
 	if (!dir) {
-		return res.handleRequestResponse(server, 500, "500 Internal Server Error", path);
+		return res.handleRequestResponse(server, 500, "500 Internal Server Error");
 	}
 
 	struct dirent* entry;

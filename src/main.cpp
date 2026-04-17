@@ -8,7 +8,7 @@
 #include "../includes/Config.hpp"
 #include <csignal>
 
-volatile sig_atomic_t g_running = 1;
+int g_running = 1;
 
 void handleSignal(int sig)
 {
@@ -106,7 +106,7 @@ int main(int ac, char** av)
 		}
 	}
 	catch (const std::exception& e) {
-		std::cerr << "\nError: " << e.what() << std::endl;
+		std::cerr << "Error: " << e.what() << std::endl;
 	}
 	for (size_t i = 0; i < servers.size(); i++)
 			delete (servers[i]);

@@ -30,7 +30,7 @@ Config::Config(const std::string& path) {
 	ParseFile(path);
 	for (size_t i = 0; i < _servers.size(); ++i)
 		for (size_t j = 0; j < _servers[i].locations.size(); ++j)
-			if (_servers[i].locations[j].path == "/error_page") {
+			if (_servers[i].locations[j].path == "/error_pages") {
 				if (_servers[i].locations[j].allowGet)
 					_servers[i].allowErrPage = true;
 				else 
@@ -126,6 +126,8 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			int	port;
 			std::stringstream ss(portStr);
 			ss >> port;
+			if (port < 1024 || port > 65535)
+				throw std::runtime_error("Please enter a valid port between 1024-65535");
 			server.port = port;
 		}
 		else if (line.find("server_name") == 0) {
@@ -161,7 +163,7 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			server.errorPages[code] = path;
 		}
 		else {
-			throw std::runtime_error("Error: unknown directive in server block: '" + line + "'");
+			throw std::runtime_error("Unknown directive in server block: '" + line + "'");
 		}
 	}
 	_servers.push_back(server);

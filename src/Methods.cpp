@@ -15,9 +15,11 @@ std::string	Client::handleRequest(size_t body_len) {
 	//std::cout << loc << std::endl;
 
 	//debug poce bleu
-	debugRequest(server->root + path);
+	//debugRequest(server->root + path);
 
-	if ((int)body_len > server->max_body_size)
+	if (_request.getVersion() != "HTTP/1.1")
+		r = res.handleRequestResponse(server, 505, "505 HTTP Version Not Supported");
+	else if ((int)body_len > server->max_body_size)
 		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large");
 	else if (method == "GET")
 		r = handleGET(path, server, loc);

@@ -75,7 +75,7 @@ HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code,
 	if (server->allowErrPage && server->errorPages.find(code) != server->errorPages.end())
 		r.body = readErrorPage(*server, code);
 	else
-		r.body = "<h1>" + status + "<h1>";
+		r.body = "<h1>" + status + "</h1>";
 	r.status = status;
 	r.contentLength = r.body.size();
 	r.contentType = "text/html";

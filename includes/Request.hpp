@@ -17,7 +17,7 @@ class Request {
 		// Public methods
 		bool parse(const std::string& Request);
 		void parseCookies();
-		
+
 		std::map<std::string, std::string>
 			extractHeaders(const std::string &rawHeader);
 

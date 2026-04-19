@@ -1,4 +1,4 @@
-#include "../includes/Config.hpp"
+#include "../includes/Header.hpp"
 
 void	Config::checkListValueDebug(const ServerConfig& srv) {
 	std::cout << "Server Name: " << srv.serverName << std::endl;
@@ -16,6 +16,13 @@ static std::string trim(const std::string& value) {
 	while (end > start && std::isspace(static_cast<unsigned char>(value[end - 1])))
 		--end;
 	return value.substr(start, end - start);
+}
+
+std::string removeSemicolon(std::string value) {
+	value = trim(value);
+	if (!value.empty() && value[value.size() - 1] == ';')
+		value.erase(value.size() - 1);
+	return value;
 }
 
 //Skip les comms
@@ -231,12 +238,7 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 	}
 }
 
-std::string removeSemicolon(std::string value) {
-	value = trim(value);
-	if (!value.empty() && value[value.size() - 1] == ';')
-		value.erase(value.size() - 1);
-	return value;
-}
+
 /*
                  *       +
            '                  |

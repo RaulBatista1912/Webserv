@@ -1,6 +1,4 @@
-#include "../includes/Response.hpp"
-#include "../includes/Utils.hpp"
-#include "../includes/Client.hpp"
+#include "../includes/Header.hpp"
 
 std::string	Client::handleRequest(size_t body_len) {
 	Response res;

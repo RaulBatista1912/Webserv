@@ -1,11 +1,4 @@
-#include "../includes/Client.hpp"
-#include "../includes/Response.hpp"
-#include "../includes/ServerConfig.hpp"
-#include "../includes/Utils.hpp"
-#include <iostream>
-#include <cstdlib>
-#include <cerrno>
-#include <fcntl.h>
+#include "../includes/Header.hpp"
 
 // Parse la request-line brute
 static std::string extractQueryFromRequestLine(const std::string& rawRequest) {

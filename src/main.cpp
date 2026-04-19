@@ -40,7 +40,6 @@ int main(int ac, char** av)
 			std::cout << "Listening on port " << serverConfigs[i].port << std::endl; // on afficher que le serv est pret sur ce port
 		}
 		while (true) {
-			// polling
 			if (poll(&fds[0], fds.size(), -1) < 0)
 				throw std::runtime_error("poll failed");
 			// identifie chaque fd du tableau fds pour savoir si on a un socket serveur ou socket client

@@ -85,6 +85,8 @@ GET text: curl -X GET http://localhost:8080/test.txt
 
 GET security: curl --path-as-is http://localhost:8080/../default.conf
 
+Download image: curl http://locahost:8080/images/aaa.jpg -o image.jpg 
+
 ### POST
 POST text: curl -X POST http://localhost:8080/test.txt -d "hello"
 

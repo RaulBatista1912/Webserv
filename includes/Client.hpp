@@ -6,18 +6,6 @@
 #include "Server.hpp"
 #include "Response.hpp"
 
-class Response;
-
-struct HttpResult {
-	std::string body;
-	std::string status;
-	std::string contentType;
-	std::map<std::string, std::string> headers;
-	size_t		contentLength;
-
-	HttpResult() : contentLength(0) {}
-};
-
 class Client {
 	public:
 		enum State {

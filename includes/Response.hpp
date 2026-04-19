@@ -1,8 +1,16 @@
 #pragma once
 #include "Header.hpp"
-#include "Client.hpp"
+#include "ServerConfig.hpp"
 
-struct HttpResult;
+struct HttpResult {
+	std::string body;
+	std::string status;
+	std::string contentType;
+	std::map<std::string, std::string> headers;
+	size_t		contentLength;
+
+	HttpResult() : contentLength(0) {}
+};
 
 class Response {
 	private:
@@ -14,7 +22,7 @@ class Response {
 		Response();
 		~Response();
 		std::string	buildResponse(HttpResult r);
-		HttpResult	handleRequestResponse(const ServerConfig* server, int code, const std::string& status, const std::string& path);
+		HttpResult	handleRequestResponse(const ServerConfig* server, int code, const std::string& status);
 		std::string	readErrorPage(const ServerConfig& server, int code);
 		void addSetCookie(const std::string& cookieLine);
 };

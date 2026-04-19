@@ -1,6 +1,4 @@
 #include "../includes/Request.hpp"
-#include <sstream>
-#include <iostream>
 
 Request::Request() {
 }

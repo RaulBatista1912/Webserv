@@ -1,4 +1,4 @@
-#include "../includes/Header.hpp"
+#include "../includes/Utils.hpp"
 
 std::string readFile(const std::string& path) {
 	std::ifstream file(path.c_str());
@@ -15,11 +15,19 @@ bool isDirectory(const std::string &path) {
 }
 
 std::string httpStatusToString(int code) {
-	if (code == 301) return "301 Moved Permanently";
-	if (code == 302) return "302 Found";
-	if (code == 307) return "307 Temporary Redirect";
-	if (code == 308) return "308 Permanent Redirect";
-	return "302 Found";
+	switch (code)
+	{
+	case 301:
+		return "301 Moved Permanently";
+	case 302:
+		return "302 Found";
+	case 307:
+		return "307 Temporary Redirect";
+	case 308:
+		return "308 Permanent Redirect";
+	default:
+		return "302 Found";
+	}
 }
 
 std::string getContentType(const std::string &path)

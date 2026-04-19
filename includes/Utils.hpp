@@ -1,4 +1,5 @@
-#include <string>
+#pragma once
+#include "Header.hpp"
 
 std::string					httpStatusToString(int code);
 std::string					getContentType(const std::string &path);

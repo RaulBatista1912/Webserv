@@ -4,6 +4,9 @@
 #include "Config.hpp"
 #include "Session.hpp"
 #include "Server.hpp"
+#include "Response.hpp"
+
+class Response;
 
 struct HttpResult {
 	std::string body;
@@ -50,7 +53,10 @@ class Client {
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
-
+		SessionContext		initSession(Response& res);
+		int					incrementVisits(Session& session);
+		void				handleLogout(Response& res, HttpResult& r);
+ 
 		// Getters Setters
 		void				setState(State s);
 		State				getState() const;

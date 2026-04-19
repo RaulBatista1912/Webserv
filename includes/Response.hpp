@@ -2,6 +2,8 @@
 #include "Header.hpp"
 #include "Client.hpp"
 
+struct HttpResult;
+
 class Response {
 	private:
 		std::string _reasonPhrase;
@@ -16,5 +18,4 @@ class Response {
 		std::string	readErrorPage(const ServerConfig& server, int code);
 		void addSetCookie(const std::string& cookieLine);
 };
-
-
+std::string buildSessionCookie(const std::string& sessionId, int maxAge);

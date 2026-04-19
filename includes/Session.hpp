@@ -2,11 +2,16 @@
 #include "Header.hpp"
 
 struct Session {
-	std::string id;
-	std::map<std::string, std::string> data;
-	time_t createdAt;
-	time_t lastAccess;
+	std::string _id;
+	std::map<std::string, std::string> _data;
+	time_t _createdAt;
+	time_t _lastAccess;
 	bool isExpired(time_t now, time_t ttl) const;
+};
+
+struct SessionContext {
+	Session* session;
+	bool created;
 };
 
 class SessionManager {
@@ -22,4 +27,5 @@ public:
 	Session& getOrCreateSession(const std::string& sessionId, bool& created);
 	void cleanupExpired();
 	std::string generateSessionId();
+	void deleteSession(const std::string& sessionId);
 };

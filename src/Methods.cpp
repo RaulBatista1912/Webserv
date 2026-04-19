@@ -2,40 +2,45 @@
 #include "../includes/Utils.hpp"
 #include "../includes/Client.hpp"
 
-std::string	Client::handleRequest(size_t body_len) {
+
+std::string Client::handleRequest(size_t body_len) {
 	Response res;
 	HttpResult r;
+
 	std::string method = _request.getMethod();
-	//std::cout << method << std::endl;
 	std::string path = _request.getPath();
-	//std::cout << path << std::endl;
+
 	const ServerConfig* server = findServer();
-	//std::cout << server->port << std::endl;
 	const Location* loc = server->findLocation(path);
-	//std::cout << loc << std::endl;
 
-	//debug poce bleu
-	//debugRequest(server->root + path);
+	// LOGOUT
+	if (path == "/logout") {
+		handleLogout(res, r);
+		return res.buildResponse(r);
+	}
 
-	SessionManager& sm = _server->getSessionManager();
-	bool created = false;
-	std::string sid = _request.getCookie("session_id");
+	//init session
+	SessionContext ctx = initSession(res);
+	Session& session = *ctx.session;
 
-	Session& session = sm.getOrCreateSession(sid, created);
+	// SESSION TEST
+	if (path == "/session-test") {
+		incrementVisits(session);
 
-	// exemple compteur
-	int visits = 0;
-	if (session.data.find("visits") != session.data.end())
-		visits = std::atoi(session.data["visits"].c_str());
+		r.status = "200 OK";
+		r.contentType = "text/plain";
+		r.body = "session_id=" + session._id + "\n";
+		r.body += "visits=" + session._data["visits"] + "\n";
+		r.contentLength = r.body.size();
 
-	visits++;
-
-	std::ostringstream vs;
-	vs << visits;
-	session.data["visits"] = vs.str();
-	if ((int)body_len > server->max_body_size)
-		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large", path);
-	else if (method == "GET")
+		return res.buildResponse(r);
+	}
+	if ((int)body_len > server->max_body_size) {
+		r = res.handleRequestResponse(server, 413,
+			"413 Request Entity Too Large", path);
+		return res.buildResponse(r);
+	}
+	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
@@ -44,7 +49,8 @@ std::string	Client::handleRequest(size_t body_len) {
 	else if (method == "HEAD")
 		r = handleHEAD(path, server, loc);
 	else
-		r = res.handleRequestResponse(server, 501, "501 Not Implemented", path);
+		r = res.handleRequestResponse(server, 501,
+			"501 Not Implemented", path);
 	return res.buildResponse(r);
 }
 
@@ -236,3 +242,4 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r = res.handleRequestResponse(server, 404, "404 Not Found", path);
 	return r;
 }
+

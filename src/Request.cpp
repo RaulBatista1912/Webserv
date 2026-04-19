@@ -49,7 +49,7 @@ bool Request::parse(const std::string& raw) {
 		_headers[key] = value;
 	}
 
-	// 2. EXTRAIRE LE BODY CORRECTEMENT (LE FIX 🔥)
+	// 2. EXTRAIRE LE BODY CORRECTEMENT
 	size_t content_length = 0;
 	if (_headers.count("Content-Length"))
 		content_length = std::atoi(_headers["Content-Length"].c_str());

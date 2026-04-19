@@ -43,6 +43,9 @@ std::string Response::buildResponse(HttpResult r) {
 		if (it->first != "Location" && it->first != "Connection")
 			response += it->first + ": " + it->second + "\r\n";
 	}
+	for (size_t i = 0; i < _setCookies.size(); ++i) {
+		response += "Set-Cookie: " + _setCookies[i] + "\r\n";
+	}
 
 	// Fin des headers
 	response += "\r\n";

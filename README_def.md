@@ -100,3 +100,21 @@ curl --head http://localhost:8080/images/fat.jpg
 only headers: curl -v http://localhost:8080/old
 
 headers + body: curl -vL http://localhost:8080/old
+
+### Session
+
+sans cookies: curl -i http://localhost:8080/session-test
+
+avec cookies: curl -i --cookie "session_id=LE_ID" http://localhost:8080/session-test
+
+### Session sauvegarde le cookie
+
+sauvegarde cookie: curl -i -c cookies.txt http://localhost:8080/session-test
+
+voir cookie: cat cookies.txt
+
+utiliser le cookie: curl -i -b cookies.txt http://localhost:8080/session-test
+
+#### requêtes rapides
+for i in {1..50}; do curl -s http://localhost:8080/session-test & done
+

@@ -1,5 +1,4 @@
-#include "../includes/ServerConfig.hpp"
-#include "../includes/Location.hpp"
+#include "../includes/Header.hpp"
 
 const Location* ServerConfig::findLocation(const std::string& path) const
 {
@@ -17,9 +16,7 @@ const Location* ServerConfig::findLocation(const std::string& path) const
 				best = &loc;
 		}
 	}
-
 	if (best)
 		return best;
-
-	return root; // fallback
+	return root;
 }

@@ -2,6 +2,8 @@
 #include "Header.hpp"
 #include "Client.hpp"
 
+struct HttpResult;
+
 class Response {
 	private:
 		std::string _reasonPhrase;

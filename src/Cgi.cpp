@@ -1,4 +1,4 @@
-#include "../includes/Client.hpp"
+#include "../includes/Header.hpp"
 
 extern char **environ; // Utiliser pour transmettre au CGI les var d'environ
 
@@ -23,8 +23,8 @@ static std::string findCgiContentType(const std::string& cgiOutput) {
 
 HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server, const Location* loc)
 {
-	HttpResult r;
 	(void)loc;
+	HttpResult r;
 	std::string fullPath = server->root + path;
 	std::string requestBody = _request.getBody();
 
@@ -35,12 +35,17 @@ HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server
 		r.body = "pipe error";
 		return r;
 	}
+
 	pid_t pid = fork();
-	if (pid == 0) {		//ENFANT
+
+	//CHILD
+	if (pid == 0) {
+
 		// Redirige stdout du CGI vers le pipe pour que le parent recupere la sortie.
 		dup2(outPipe[1], STDOUT_FILENO);
 		// Redirige stdin du CGI pour recevoir le body des requetes POST.
 		dup2(inPipe[0], STDIN_FILENO);
+
 		close(outPipe[0]);
 		close(outPipe[1]);
 		close(inPipe[0]);
@@ -55,27 +60,29 @@ HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server
 		setenv("REQUEST_METHOD", _request.getMethod().c_str(), 1);
 		setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
 		setenv("CONTENT_TYPE", _request.getHeader("Content-Type").c_str(), 1);
-		// Donne au CGI son chemin complet pour qu'il puisse ecrire son fichier au bon endroit.
 		setenv("SCRIPT_FILENAME", fullPath.c_str(), 1);
 
 		char *argv[] = {(char *)fullPath.c_str(), NULL};
-		// Important: passer 'environ' (et pas NULL), sinon les setenv ne sont pas visibles.
 		execve(fullPath.c_str(), argv, environ);
 		exit(1);
 	}
+	//PARENT
 	else {
-		// PARENT
 		close(outPipe[1]);
 		close(inPipe[0]);
+
 		if (!requestBody.empty())
 			write(inPipe[1], requestBody.c_str(), requestBody.size());
+
 		close(inPipe[1]);
+
 		char buffer[4096];
 		std::string output;
 		int bytes = 0;
 
 		while ((bytes = read(outPipe[0], buffer, sizeof(buffer))) > 0) // envoie la rep
 			output.append(buffer, bytes);
+
 		close(outPipe[0]);
 		waitpid(pid, NULL, 0);
 
@@ -89,7 +96,7 @@ HttpResult Client::handleCGI(const std::string& path, const ServerConfig* server
 		r.contentType = findCgiContentType(output);
 		if (r.contentType.empty())
 			r.contentType = "text/plain";
-		std::cout << "[CGI] query='" << _queryString << "' body='" << r.body << "'" << std::endl;
+		//std::cout << "[CGI] query='" << _queryString << "' body='" << r.body << "'" << std::endl;
 		return r;
 	}
 }

@@ -1,5 +1,4 @@
-#include "../includes/Response.hpp"
-#include "../includes/Utils.hpp"
+#include "../includes/Header.hpp"
 
 Response::Response() {}
 

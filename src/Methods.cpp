@@ -1,6 +1,4 @@
-#include "../includes/Response.hpp"
-#include "../includes/Utils.hpp"
-#include "../includes/Client.hpp"
+#include "../includes/Header.hpp"
 
 std::string	Client::handleRequest(size_t body_len) {
 	Response res;
@@ -104,6 +102,9 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 
 	std::string contentType = _request.getHeader("Content-Type");
 	if (!loc->allowPost)
+		return res.handleRequestResponse(server, 405, "405 Method Not Allowed", path);
+	if (path.find(".cgi") != std::string::npos)
+		return handleCGI(path, server, loc);
 		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
 	// Si c'est un upload → déléguer
 	if (contentType.find("multipart/form-data") != std::string::npos)

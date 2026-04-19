@@ -102,7 +102,7 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 
 	std::string contentType = _request.getHeader("Content-Type");
 	if (!loc->allowPost)
-		return res.handleRequestResponse(server, 405, "405 Method Not Allowed", path);
+		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
 	if (path.find(".cgi") != std::string::npos)
 		return handleCGI(path, server, loc);
 		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string> //func string
+#include <string.h>
 #include <vector> // list
 #include <fstream> //read opin fill
 #include <map> //list
@@ -19,12 +20,3 @@
 #include <sys/wait.h> //time
 #include <cerrno> //ERRNO
 
-#include "Client.hpp"
-#include "Config.hpp"
-#include "Location.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "Server.hpp"
-#include "ServerConfig.hpp"
-#include "Session.hpp"
-#include "Utils.hpp"

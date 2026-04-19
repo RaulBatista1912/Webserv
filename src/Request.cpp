@@ -1,4 +1,4 @@
-#include "../includes/Header.hpp"
+#include "../includes/Request.hpp"
 
 Request::Request() {
 }
@@ -47,7 +47,7 @@ bool Request::parse(const std::string& raw) {
 		_headers[key] = value;
 	}
 
-	// 2. EXTRAIRE LE BODY CORRECTEMENT (LE FIX 🔥)
+	// 2. EXTRAIRE LE BODY CORRECTEMENT
 	size_t content_length = 0;
 	if (_headers.count("Content-Length"))
 		content_length = std::atoi(_headers["Content-Length"].c_str());
@@ -88,6 +88,54 @@ Request::extractHeaders(const std::string &rawHeader)
 		headers[key] = value;
 	}
 	return headers;
+}
+
+static std::string trim(const std::string& s) {
+	size_t start = 0;
+	while (start < s.size() && (s[start] == ' ' || s[start] == '\t'))
+		start++;
+	size_t end = s.size();
+	while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t'))
+		end--;
+	return s.substr(start, end - start);
+}
+
+void Request::parseCookies() {
+	_cookies.clear();
+
+	std::map<std::string, std::string>::iterator it = _headers.find("Cookie");
+	if (it == _headers.end())
+		return;
+
+	std::string raw = it->second;
+	size_t pos = 0;
+
+	while (pos < raw.size()) {
+		size_t sep = raw.find(';', pos);
+		std::string pair = (sep == std::string::npos)
+			? raw.substr(pos)
+			: raw.substr(pos, sep - pos);
+
+		pair = trim(pair);
+
+		size_t eq = pair.find('=');
+		if (eq != std::string::npos) {
+			std::string key = trim(pair.substr(0, eq));
+			std::string value = trim(pair.substr(eq + 1));
+			_cookies[key] = value;
+		}
+
+		if (sep == std::string::npos)
+			break;
+		pos = sep + 1;
+	}
+}
+
+const std::string Request::getCookie(const std::string& name) const {
+	std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
+	if (it == _cookies.end())
+		return "";
+	return it->second;
 }
 
 const std::string& Request::getMethod() const {

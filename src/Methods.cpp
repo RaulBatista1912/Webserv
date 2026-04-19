@@ -1,20 +1,38 @@
-#include "../includes/Header.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/Utils.hpp"
 
-std::string	Client::handleRequest(size_t body_len) {
+std::string Client::handleRequest(size_t body_len) {
 	Response res;
 	HttpResult r;
+
 	std::string method = _request.getMethod();
-	//std::cout << method << std::endl;
 	std::string path = _request.getPath();
-	//std::cout << path << std::endl;
+
 	const ServerConfig* server = findServer();
-	//std::cout << server->port << std::endl;
 	const Location* loc = server->findLocation(path);
-	//std::cout << loc << std::endl;
 
-	//debug poce bleu
-	//debugRequest(server->root + path);
+	// LOGOUT
+	if (path == "/logout") {
+		handleLogout(res, r);
+		return res.buildResponse(r);
+	}
 
+	//init session
+	SessionContext ctx = initSession(res);
+	Session& session = *ctx.session;
+
+	// SESSION TEST
+	if (path == "/session-test") {
+		incrementVisits(session);
+
+		r.status = "200 OK";
+		r.contentType = "text/plain";
+		r.body = "session_id=" + session._id + "\n";
+		r.body += "visits=" + session._data["visits"] + "\n";
+		r.contentLength = r.body.size();
+
+		return res.buildResponse(r);
+	}
 	if (_request.getVersion() != "HTTP/1.1")
 		r = res.handleRequestResponse(server, 505, "505 HTTP Version Not Supported");
 	else if ((int)body_len > server->max_body_size)
@@ -103,9 +121,8 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 	std::string contentType = _request.getHeader("Content-Type");
 	if (!loc->allowPost)
 		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
-	if (path.find(".cgi") != std::string::npos)
-		return handleCGI(path, server, loc);
-		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
+	// if (path.find(".cgi") != std::string::npos)
+	// 	return handleCGI(path, server, loc);
 	// Si c'est un upload → déléguer
 	if (contentType.find("multipart/form-data") != std::string::npos)
 		return handleUpload(path, server, loc);
@@ -206,8 +223,8 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
-	if (path.find(".cgi") != std::string::npos)
-		return handleCGI(path, server, loc);
+	// if (path.find(".cgi") != std::string::npos) decommente une fois cgi corrigé
+	// 	return handleCGI(path, server, loc);
 	file = server->root + path;
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
@@ -223,3 +240,4 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 		r = res.handleRequestResponse(server, 404, "404 Not Found");
 	return r;
 }
+

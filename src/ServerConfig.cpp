@@ -1,4 +1,4 @@
-#include "../includes/Header.hpp"
+#include "../includes/ServerConfig.hpp"
 
 const Location* ServerConfig::findLocation(const std::string& path) const
 {

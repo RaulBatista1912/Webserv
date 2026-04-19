@@ -1,11 +1,13 @@
 #pragma once
 #include "Header.hpp"
+#include "Session.hpp"
 
 class Server {
 	private:
 		int _fd;// server's socket
 		int _port; // port where the server listens for incoming connections
 		std::string _root;
+		SessionManager _sessionManager;
 	public:
 		Server(int port, const std::string& root);
 		~Server();
@@ -18,5 +20,6 @@ class Server {
 
 		// Public methods
 		int acceptClient() const;
+		SessionManager& getSessionManager();
 };
 //Goal: To listen the incoming connections

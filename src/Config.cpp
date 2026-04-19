@@ -1,4 +1,4 @@
-#include "../includes/Header.hpp"
+#include "../includes/Config.hpp"
 
 void	Config::checkListValueDebug(const ServerConfig& srv) {
 	std::cout << "Server Name: " << srv.serverName << std::endl;

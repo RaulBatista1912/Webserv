@@ -1,4 +1,12 @@
-#include "../includes/Header.hpp"
+#include "../includes/Client.hpp"
+
+Client::Client(int fd, Config& config, Server* server):
+_fd(fd), _state(READING), _config(config), _server(server){}
+
+Client::~Client() {
+	if (_fd >= 0)
+		close(_fd);
+}
 
 // Parse la request-line brute
 static std::string extractQueryFromRequestLine(const std::string& rawRequest) {
@@ -135,6 +143,7 @@ bool	Client::readFromSocket() {
 		_state = WRITING;
 		return true;
 	}
+	_request.parseCookies();
 	_writeBuffer = handleRequest(body_len);
 	_state = WRITING;
 	return true;
@@ -163,6 +172,50 @@ bool	Client::writeToSocket() {
 	return (true);
 }
 
+//get the session user or create it if doesn't exist
+SessionContext Client::initSession(Response& res) {
+	SessionContext ctx;
+
+	SessionManager& sm = _server->getSessionManager();
+	std::string sid = _request.getCookie("session_id");
+	ctx.session = &sm.getOrCreateSession(sid, ctx.created);
+	if (ctx.created) {
+		res.addSetCookie(buildSessionCookie(ctx.session->_id, 3600));
+	}
+	return ctx;
+}
+
+int Client::incrementVisits(Session& session) {
+	int visits = 0;
+
+	if (session._data.find("visits") != session._data.end())
+		visits = std::atoi(session._data["visits"].c_str());
+
+	visits++;
+
+	std::ostringstream vs;
+	vs << visits;
+	session._data["visits"] = vs.str();
+
+	return visits;
+}
+
+void Client::handleLogout(Response& res, HttpResult& r) {
+	SessionManager& sm = _server->getSessionManager();
+
+	std::string sid = _request.getCookie("session_id");
+
+	if (!sid.empty())
+		sm.deleteSession(sid);
+
+	res.addSetCookie("session_id=deleted; Path=/; Max-Age=0; HttpOnly");
+
+	r.status = "200 OK";
+	r.body = "logged out\n";
+	r.contentType = "text/plain";
+	r.contentLength = r.body.size();
+}
+
 void	Client::debugRequest(const std::string &file) {
 	std::cout << "----- DEBUG REQUEST -----" << std::endl;
 	std::cout << "New client fd=" << _fd << std::endl;
@@ -180,16 +233,6 @@ void	Client::debugRequest(const std::string &file) {
 	std::cout << _request.getBody() << std::endl;
 	std::cout << "\nServer is searching: " << file << std::endl;
 	std::cout << "----------END REQUEST---------------\n" << std::endl;
-}
-
-// Public methods
-Client::Client(int fd, Config& config): _fd(fd), _state(READING), _config(config){
-	fcntl(_fd, F_SETFL, O_NONBLOCK);
-}
-
-Client::~Client() {
-	if (_fd >= 0)
-		close(_fd);
 }
 
 // Getters Setters

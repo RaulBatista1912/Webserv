@@ -33,6 +33,7 @@ int main(int ac, char** av)
 	std::vector<Server*> servers;
 	std::map<int, Client*> clients;
 	std::vector<pollfd> fds;
+	time_t lastCleanup;
 	try {
 		Config config(av[1]);
 		const std::vector<ServerConfig>& serverConfigs = config.getServers();
@@ -50,9 +51,17 @@ int main(int ac, char** av)
 
 			std::cout << "Listening on port " << serverConfigs[i].port << std::endl; // on afficher que le serv est pret sur ce port
 		}
+		lastCleanup = time(NULL);
 		while (g_running) {
+			// polling blocks until an event appears
 			if (poll(&fds[0], fds.size(), -1) < 0)
 				throw std::runtime_error("poll failed");
+			time_t now = time(NULL);
+			if (now - lastCleanup >= 10) { // toutes les 10s
+				for (size_t s = 0; s < servers.size(); ++s)
+					servers[s]->getSessionManager().cleanupExpired();
+				lastCleanup = now;
+			}
 			// identifie chaque fd du tableau fds pour savoir si on a un socket serveur ou socket client
 			// si serveur -> gerer accept() pour un nouveau client
 			// si client -> gerer lecture/ecriture
@@ -76,7 +85,7 @@ int main(int ac, char** av)
 								break;
 							break;
 						}
-						Client* c = new Client(clientFd, config);
+						Client* c = new Client(clientFd, config, currentServer);
 						clients[clientFd] = c;
 
 						pollfd p;

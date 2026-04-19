@@ -1,4 +1,4 @@
-#include "../includes/Header.hpp"
+#include "../includes/Response.hpp"
 
 Response::Response() {}
 
@@ -42,6 +42,9 @@ std::string Response::buildResponse(HttpResult r) {
 		if (it->first != "Location" && it->first != "Connection")
 			response += it->first + ": " + it->second + "\r\n";
 	}
+	for (size_t i = 0; i < _setCookies.size(); ++i) {
+		response += "Set-Cookie: " + _setCookies[i] + "\r\n";
+	}
 
 	// Fin des headers
 	response += "\r\n";
@@ -79,4 +82,19 @@ HttpResult	Response::handleRequestResponse(const ServerConfig* server, int code,
 	r.contentLength = r.body.size();
 	r.contentType = "text/html";
 	return r;
+}
+
+void Response::addSetCookie(const std::string& cookieLine) {
+	_setCookies.push_back(cookieLine);
+}
+
+std::string buildSessionCookie(const std::string& sessionId, int maxAge) {
+	std::ostringstream oss;
+	oss << "session_id=" << sessionId
+		<< "; Path=/"
+		<< "; HttpOnly"
+		<< "; SameSite=Lax";
+	if (maxAge > 0)
+		oss << "; Max-Age=" << maxAge;
+	return oss.str();
 }

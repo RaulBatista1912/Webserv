@@ -2,16 +2,9 @@
 #include "Header.hpp"
 #include "Request.hpp"
 #include "Config.hpp"
-
-struct HttpResult {
-	std::string body;
-	std::string status;
-	std::string contentType;
-	std::map<std::string, std::string> headers;
-	size_t		contentLength;
-
-	HttpResult() : contentLength(0) {}
-};
+#include "Session.hpp"
+#include "Server.hpp"
+#include "Response.hpp"
 
 class Client {
 	public:
@@ -29,9 +22,10 @@ class Client {
 		std::string			_queryString;
 		Request				_request;
 		Config&				_config;
+		Server*				_server;
 
 	public:
-		Client(int fd, Config& config);	// open the connexion
+		Client(int fd, Config& config, Server* server);	// open the connexion
 		~Client();									// close the connexion
 
 		// Public methods
@@ -47,7 +41,10 @@ class Client {
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
-
+		SessionContext		initSession(Response& res);
+		int					incrementVisits(Session& session);
+		void				handleLogout(Response& res, HttpResult& r);
+ 
 		// Getters Setters
 		void				setState(State s);
 		State				getState() const;

@@ -7,7 +7,7 @@ class Request {
 		std::string _path;
 		std::string _version;
 		std::map<std::string, std::string> _headers;
-		std::map<std::string, std::string> cookies;
+		std::map<std::string, std::string> _cookies;
 		std::string _body;
 
 	public:
@@ -28,5 +28,5 @@ class Request {
 		const std::string& getHeader(const std::string& contentType) const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const std::string& getBody() const;
-		const std::string& getCookie(const std::string& name) const;
+		const std::string getCookie(const std::string& name) const;
 };

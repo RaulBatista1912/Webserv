@@ -169,8 +169,8 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 	std::string contentType = _request.getHeader("Content-Type");
 	if (!loc->allowPost)
 		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
-	// if (path.find(".cgi") != std::string::npos)
-	// 	return handleCGI(path, server, loc);
+	if (path.find(".cgi") != std::string::npos)
+		return handleCGI(path, server, loc);
 	// Si c'est un upload → déléguer
 	if (contentType.find("multipart/form-data") != std::string::npos)
 		return handleUpload(path, server, loc);
@@ -276,9 +276,8 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
-	// if (path.find(".cgi") != std::string::npos) decommente une fois cgi corrigé
-	// 	return handleCGI(path, server, loc);
-	file = server->root + path;
+	if (path.find(".cgi") != std::string::npos)
+		return handleCGI(path, server, loc);
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		std::stringstream buffer;

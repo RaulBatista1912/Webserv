@@ -160,11 +160,16 @@ HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* ser
 	const std::string completePath = server->root + path;
 
 	// 3. Sécurité basique
-	if (completePath.find("..") != std::string::npos && isDirectory(completePath))
+	if (completePath.find("..") != std::string::npos ||
+		completePath.find(".html") != std::string::npos ||
+		completePath.find(".js") != std::string::npos ||
+		completePath.find(".cpp") != std::string::npos ||
+		completePath.find(".hpp") != std::string::npos ||
+		isDirectory(completePath))
 		return res.handleRequestResponse(server, 403, "403 Forbidden");
 
 	// 5. Vérifier si le fichier existe
-	if (0 < access(completePath.c_str(), F_OK) || 0 < access(completePath.c_str(), W_OK))
+	if (0 > access(completePath.c_str(), F_OK | W_OK))
 		return res.handleRequestResponse(server, 404, "404 Not Found");
 
 	// 6. Supprimer

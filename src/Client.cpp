@@ -185,20 +185,6 @@ SessionContext Client::initSession(Response& res) {
 	return ctx;
 }
 
-int Client::incrementVisits(Session& session) {
-	int visits = 0;
-
-	if (session._data.find("visits") != session._data.end())
-		visits = std::atoi(session._data["visits"].c_str());
-
-	visits++;
-
-	std::ostringstream vs;
-	vs << visits;
-	session._data["visits"] = vs.str();
-
-	return visits;
-}
 
 void Client::handleLogout(Response& res, HttpResult& r) {
 	SessionManager& sm = _server->getSessionManager();

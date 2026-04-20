@@ -70,3 +70,18 @@ bool Session::isExpired(time_t now, time_t ttl) const {
 void SessionManager::deleteSession(const std::string& sessionId) {
 	_sessions.erase(sessionId);
 }
+
+int incrementVisits(Session& session) {
+	int visits = 0;
+
+	if (session._data.find("visits") != session._data.end())
+		visits = std::atoi(session._data["visits"].c_str());
+
+	visits++;
+
+	std::ostringstream vs;
+	vs << visits;
+	session._data["visits"] = vs.str();
+
+	return visits;
+}

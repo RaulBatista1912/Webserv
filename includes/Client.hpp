@@ -38,11 +38,11 @@ class Client {
 		HttpResult			handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
+		HttpResult			handleLogin(const ServerConfig* server, Session& session, const std::string& method);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 		SessionContext		initSession(Response& res);
-		int					incrementVisits(Session& session);
 		void				handleLogout(Response& res, HttpResult& r);
  
 		// Getters Setters

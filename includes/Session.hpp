@@ -29,3 +29,4 @@ public:
 	std::string generateSessionId();
 	void deleteSession(const std::string& sessionId);
 };
+int incrementVisits(Session& session);

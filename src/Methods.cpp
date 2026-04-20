@@ -1,5 +1,20 @@
 #include "../includes/Client.hpp"
+#include "../includes/Session.hpp"
 #include "../includes/Utils.hpp"
+
+// extrait caca depuis user=caca&age=42
+std::string extractQueryParam(const std::string& query, const std::string& key) {
+	size_t pos = query.find(key + "=");
+
+	if (pos == std::string::npos)
+		return "";
+	pos += key.length() + 1;
+	size_t end = query.find("&", pos);
+	if (end == std::string::npos)
+		end = query.length();
+
+	return query.substr(pos, end - pos);
+}
 
 std::string Client::handleRequest(size_t body_len) {
 	Response res;
@@ -11,33 +26,66 @@ std::string Client::handleRequest(size_t body_len) {
 	const ServerConfig* server = findServer();
 	const Location* loc = server->findLocation(path);
 
-	// LOGOUT
+	// 1. LOGOUT : avant initSession, pour ne pas recréer de session
 	if (path == "/logout") {
 		handleLogout(res, r);
 		return res.buildResponse(r);
 	}
 
-	//init session
+	// 2. Vérifications globales
+	if (_request.getVersion() != "HTTP/1.1") {
+		r = res.handleRequestResponse(server, 505, "505 HTTP Version Not Supported");
+		return res.buildResponse(r);
+	}
+
+	if ((int)body_len > server->max_body_size) {
+		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large");
+		return res.buildResponse(r);
+	}
+
+	// 3. Init session pour les routes qui en ont besoin
 	SessionContext ctx = initSession(res);
 	Session& session = *ctx.session;
 
-	// SESSION TEST
+	// 4. LOGIN : écrit "user" dans la session
+	if (path == "/login"){
+		r = handleLogin(server, session, method);
+		return res.buildResponse(r);
+	}
+
+	// 5. SESSION TEST : compteur
 	if (path == "/session-test") {
 		incrementVisits(session);
-
 		r.status = "200 OK";
 		r.contentType = "text/plain";
 		r.body = "session_id=" + session._id + "\n";
 		r.body += "visits=" + session._data["visits"] + "\n";
 		r.contentLength = r.body.size();
+		return res.buildResponse(r);
+	}
+
+	// 6. PROFILE : lit "user" depuis la session chheck si connecté
+	if (path == "/profile") {
+		std::string body = "<html><body>";
+
+		if (session._data.find("user") != session._data.end()) {
+			body += "<h1>Hello " + session._data["user"] + "</h1>";
+			body += "<a href='/logout'>Logout</a>";
+		} else {
+			body += "<h1>Not logged in</h1>";
+			body += "<a href='/login?user=daniel'>Login</a>";
+		}
+		body += "</body></html>";
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.body = body;
+		r.contentLength = r.body.size();
 
 		return res.buildResponse(r);
 	}
-	if (_request.getVersion() != "HTTP/1.1")
-		r = res.handleRequestResponse(server, 505, "505 HTTP Version Not Supported");
-	else if ((int)body_len > server->max_body_size)
-		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large");
-	else if (method == "GET")
+
+	// 7. Routing normal
+	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
 		r = handlePOST(path, server, loc);
@@ -233,7 +281,6 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 	file = server->root + path;
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
-		//std::cout << "OPEN FILE: " << file << "\n" << std::endl;
 		std::stringstream buffer;
 		buffer << webPage.rdbuf();
 		r.status = "200 OK";
@@ -246,3 +293,48 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 	return r;
 }
 
+HttpResult Client::handleLogin(const ServerConfig* server, Session& session, const std::string& method) {
+	HttpResult	r;
+	Response	res;
+
+	// GET → afficher formulaire
+	if (method == "GET") {
+		std::string body =
+		"<html><body>"
+		"<h1>Login</h1>"
+		"<form method='POST' action='/login'>"
+		"<input type='text' name='user'/>"
+		"<input type='submit' value='Login'/>"
+		"</form>"
+		"</body></html>";
+
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.body = body;
+		r.contentLength = body.size();
+		return r;
+	}
+
+	// POST → traiter login
+	if (method == "POST") {
+		std::string body = _request.getBody();
+		std::string user = extractQueryParam(body, "user");
+
+		if (!user.empty())
+			session._data["user"] = user;
+
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.body = "<html><body>Logged as " + user +
+		         "<br><a href='/profile'>Go profile</a></body></html>";
+		r.contentLength = r.body.size();
+		return r;
+	}
+	res.handleRequestResponse(server, 405, "405 Method Not Allowed");
+	// autre méthode
+	r.status = "405 Method Not Allowed";
+	r.contentType = "text/plain";
+	r.body = "Method Not Allowed\n";
+	r.contentLength = r.body.size();
+	return r;
+}

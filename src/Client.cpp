@@ -167,7 +167,6 @@ SessionContext Client::initSession(Response& res) {
 	return ctx;
 }
 
-
 void Client::handleLogout(Response& res, HttpResult& r) {
 	SessionManager& sm = _server->getSessionManager();
 

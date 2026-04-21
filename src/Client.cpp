@@ -197,8 +197,9 @@ void Client::handleLogout(Response& res, HttpResult& r) {
 	res.addSetCookie("session_id=deleted; Path=/; Max-Age=0; HttpOnly");
 
 	r.status = "200 OK";
-	r.body = "logged out\n";
-	r.contentType = "text/plain";
+	r.body = "<h1>logged out</h1>";
+	r.body += "<a href='/'>Retour à l'accueil</a>\n";
+	r.contentType = "text/html";
 	r.contentLength = r.body.size();
 }
 

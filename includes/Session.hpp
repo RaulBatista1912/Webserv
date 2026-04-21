@@ -4,6 +4,7 @@
 struct Session {
 	std::string _id;
 	std::map<std::string, std::string> _data;
+	int _visits;
 	time_t _createdAt;
 	time_t _lastAccess;
 	bool isExpired(time_t now, time_t ttl) const;

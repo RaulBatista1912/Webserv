@@ -53,23 +53,15 @@ std::string Client::handleRequest(size_t body_len) {
 		return res.buildResponse(r);
 	}
 
-	// 5. SESSION TEST : compteur
-	if (path == "/session-test") {
-		incrementVisits(session);
-		r.status = "200 OK";
-		r.contentType = "text/plain";
-		r.body = "session_id=" + session._id + "\n";
-		r.body += "visits=" + session._data["visits"] + "\n";
-		r.contentLength = r.body.size();
-		return res.buildResponse(r);
-	}
-
 	// 6. PROFILE : lit "user" depuis la session chheck si connecté
 	if (path == "/profile") {
 		std::string body = "<html><body>";
 
 		if (session._data.find("user") != session._data.end()) {
+			std::stringstream ss;
+			ss << ++session._visits;
 			body += "<h1>Hello " + session._data["user"] + "</h1>";
+			body += "<p>Visits: "+ ss.str() +"</p>";
 			body += "<a href='/logout'>Logout</a>";
 		} else {
 			body += "<h1>Not logged in</h1>";

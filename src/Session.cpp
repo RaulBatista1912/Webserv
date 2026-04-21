@@ -26,6 +26,7 @@ Session& SessionManager::createSession() {
 	s._id = generateSessionId();
 	s._createdAt = time(NULL);
 	s._lastAccess = s._createdAt;
+	s._visits = 0;
 	_sessions[s._id] = s;
 	return _sessions[s._id];
 }
@@ -78,7 +79,7 @@ int incrementVisits(Session& session) {
 		visits = std::atoi(session._data["visits"].c_str());
 
 	visits++;
-
+	session._visits = visits;
 	std::ostringstream vs;
 	vs << visits;
 	session._data["visits"] = vs.str();

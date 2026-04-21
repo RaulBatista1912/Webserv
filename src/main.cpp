@@ -54,8 +54,12 @@ int main(int ac, char** av)
 		lastCleanup = time(NULL);
 		while (g_running) {
 			// polling blocks until an event appears
-			if (poll(&fds[0], fds.size(), -1) < 0)
+			int	ret = poll(&fds[0], fds.size(), -1);
+			if (ret < 0) {
+				if (errno == EINTR)
+					continue;
 				throw std::runtime_error("poll failed");
+			}
 			time_t now = time(NULL);
 			if (now - lastCleanup >= 10) { // toutes les 10s
 				for (size_t s = 0; s < servers.size(); ++s)

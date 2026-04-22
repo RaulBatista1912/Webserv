@@ -3,11 +3,27 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
+	<title>Profile</title>
+	<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-	<h1>Hello {{USER}}</h1>
-	<p>Visits: {{VISITS}}</p>
-	<a href="/logout">Logout</a>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+	<div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center">
+		<h1 class="text-3xl font-bold text-gray-800 mb-4">
+			Hello {{USER}}
+		</h1>
+
+		<p class="text-gray-600 mb-6">
+			Visits: <span class="font-semibold text-blue-500">{{VISITS}}</span>
+		</p>
+
+		<a 
+			href="/logout"
+			class="inline-block bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition"
+		>
+			Logout
+		</a>
+	</div>
+
 </body>
 </html>

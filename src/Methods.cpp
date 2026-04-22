@@ -48,31 +48,58 @@ std::string Client::handleRequest(size_t body_len) {
 	Session& session = *ctx.session;
 
 	// 4. LOGIN : écrit "user" dans la session
-	if (path == "/login"){
+	if (path == "/login" && method == "GET") {
+		std::string file = server->root + "/auth/login.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.buildResponse(res.handleRequestResponse(server, 404, "404 Not Found"));
+
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.body = buffer.str();
+		r.contentLength = r.body.size();
+
+		return res.buildResponse(r);
+	}
+	if (path == "/login" && method == "POST") {
 		r = handleLogin(server, session, method);
 		return res.buildResponse(r);
 	}
 
 	// 6. PROFILE : lit "user" depuis la session chheck si connecté
 	if (path == "/profile") {
-		std::string body = "<html><body>";
-
+		std::string file = server->root + "/auth/profile.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.buildResponse(res.handleRequestResponse(server, 404, "404 Not Found"));
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		std::string body = buffer.str();
 		if (session._data.find("user") != session._data.end()) {
-			std::stringstream ss;
-			ss << ++session._visits;
-			body += "<h1>Hello " + session._data["user"] + "</h1>";
-			body += "<p>Visits: "+ ss.str() +"</p>";
-			body += "<a href='/logout'>Logout</a>";
-		} else {
-			body += "<h1>Not logged in</h1>";
-			body += "<a href='/login?user=daniel'>Login</a>";
+			std::string user = session._data["user"];
+
+			std::stringstream vs;
+			vs << ++session._visits;
+
+			// remplacer placeholders
+			size_t pos;
+			pos = body.find("{{USER}}");
+			if (pos != std::string::npos)
+				body.replace(pos, 8, user);
+			pos = body.find("{{VISITS}}");
+			if (pos != std::string::npos)
+				body.replace(pos, 10, vs.str());
 		}
-		body += "</body></html>";
+		else {
+			body = "<h1>Not logged in</h1><a href='/login'>Login</a>";
+		}
 		r.status = "200 OK";
 		r.contentType = "text/html";
 		r.body = body;
-		r.contentLength = r.body.size();
-
+		r.contentLength = body.size();
 		return res.buildResponse(r);
 	}
 

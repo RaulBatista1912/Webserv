@@ -46,3 +46,7 @@ std::string getContentType(const std::string &path)
 		return "image/gif";
 	return "text/html";
 }
+
+bool	isTemporaryAcceptError(int err) {
+	return (err == EINTR || err == EAGAIN || err == EWOULDBLOCK);
+}

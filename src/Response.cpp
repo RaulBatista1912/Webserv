@@ -88,13 +88,13 @@ void Response::addSetCookie(const std::string& cookieLine) {
 	_setCookies.push_back(cookieLine);
 }
 
-std::string buildSessionCookie(const std::string& sessionId, int maxAge) {
-	std::ostringstream oss;
-	oss << "session_id=" << sessionId
-		<< "; Path=/"
-		<< "; HttpOnly"
-		<< "; SameSite=Lax";
-	if (maxAge > 0)
-		oss << "; Max-Age=" << maxAge;
-	return oss.str();
+std::string buildSessionCookie(const std::string& id, int ttl) {
+	std::ostringstream ss;
+
+	ss << "session_id=" << id;
+	ss << "; Path=/";
+	ss << "; Max-Age=" << ttl;
+	ss << "; HttpOnly";
+	ss << "; SameSite=Lax";
+	return ss.str();
 }

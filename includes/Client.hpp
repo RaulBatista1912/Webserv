@@ -33,18 +33,19 @@ class Client {
 		bool				writeToSocket();	// send the response to the client
 		std::string			handleRequest(size_t body_len);
 		HttpResult 			handleCGI(const std::string& path, const ServerConfig* server, const Location* loc); // magie raciste
+		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleHEAD(std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleLogin(const ServerConfig* server, Session& session, const std::string& method);
+		HttpResult			handleLogout(const ServerConfig* server, Response& res);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
-		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 		SessionContext		initSession(Response& res);
-		void				handleLogout(Response& res, HttpResult& r);
- 
+
+
 		// Getters Setters
 		void				setState(State s);
 		State				getState() const;

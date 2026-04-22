@@ -46,3 +46,17 @@ std::string getContentType(const std::string &path)
 		return "image/gif";
 	return "text/html";
 }
+
+// extrait le user caca depuis user=caca&age=42
+std::string extractQueryParam(const std::string& query, const std::string& key) {
+	size_t pos = query.find(key + "=");
+
+	if (pos == std::string::npos)
+		return "";
+	pos += key.length() + 1;
+	size_t end = query.find("&", pos);
+	if (end == std::string::npos)
+		end = query.length();
+
+	return query.substr(pos, end - pos);
+}

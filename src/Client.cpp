@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include "../includes/Utils.hpp"
 
 Client::Client(int fd, Config& config, Server* server):
 _fd(fd), _state(READING), _config(config), _server(server){}
@@ -167,7 +168,77 @@ SessionContext Client::initSession(Response& res) {
 	return ctx;
 }
 
-void Client::handleLogout(Response& res, HttpResult& r) {
+HttpResult Client::handleLogin(const ServerConfig* server, Session& session, const std::string& method)
+{
+	HttpResult r;
+	Response res;
+
+	// =========================
+	// GET → afficher page login
+	// =========================
+	if (method == "GET")
+	{
+		// déjà connecté → redirect
+		if (session._data.find("user") != session._data.end())
+		{
+			r.status = "302 Found";
+			r.headers["Location"] = "/profile";
+			r.body = "";
+			r.contentType = "text/html";
+			r.contentLength = 0;
+			return r;
+		}
+		std::string file = server->root + "/auth/login.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.handleRequestResponse(server, 404, "404 Not Found");
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.body = buffer.str();
+		r.contentLength = r.body.size();
+		return r;
+	}
+
+	// =========================
+	// POST → traiter login
+	// =========================
+	if (method == "POST")
+	{
+		std::string body = _request.getBody();
+		std::string user = extractQueryParam(body, "user");
+
+		// validation
+		if (user.empty())
+		{
+			r.status = "400 Bad Request";
+			r.contentType = "text/html";
+			r.body = "<html><body><h1>400 Bad Request</h1><p>Missing username</p></body></html>";
+			r.contentLength = r.body.size();
+			return r;
+		}
+
+		// enregistrer session
+		session._data["user"] = user;
+
+		// redirect vers profile
+		r.status = "302 Found";
+		r.headers["Location"] = "/profile";
+		r.body = "";
+		r.contentType = "text/html";
+		r.contentLength = 0;
+		return r;
+	}
+
+	// =========================
+	// AUTRES MÉTHODES → 405
+	// =========================
+	return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
+}
+
+HttpResult Client::handleLogout(const ServerConfig* server, Response& res) {
+	HttpResult r;
 	SessionManager& sm = _server->getSessionManager();
 
 	std::string sid = _request.getCookie("session_id");
@@ -177,11 +248,17 @@ void Client::handleLogout(Response& res, HttpResult& r) {
 
 	res.addSetCookie("session_id=deleted; Path=/; Max-Age=0; HttpOnly");
 
+	std::string file = server->root + "/auth/logout.html";
+	std::ifstream f(file.c_str());
+	if (!f)
+		return res.handleRequestResponse(server, 404, "404 Not Found");
+	std::stringstream buffer;
+	buffer << f.rdbuf();
 	r.status = "200 OK";
-	r.body = "<h1>logged out</h1>";
-	r.body += "<a href='/'>Retour à l'accueil</a>\n";
 	r.contentType = "text/html";
+	r.body = buffer.str();
 	r.contentLength = r.body.size();
+	return r;
 }
 
 void	Client::debugRequest(const std::string &file) {

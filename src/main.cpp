@@ -1,29 +1,32 @@
-#include <vector>
-#include <map>
-#include <iostream>
-#include <cstdio>
-#include <cerrno>
-#include <poll.h>
+#include "../includes/Header.hpp"
 #include "../includes/Client.hpp"
 #include "../includes/Server.hpp"
 #include "../includes/Config.hpp"
-#include <csignal>
 
 int g_running = 1;
 
-void handleSignal(int sig)
-{
+void handleSignal(int sig) {
 	(void)sig;
 	g_running = 0;
 }
 
-static bool isTemporaryAcceptError(int err)
-{
+static bool isTemporaryAcceptError(int err) {
 	return (err == EINTR || err == EAGAIN || err == EWOULDBLOCK);
 }
 
-int main(int ac, char** av)
-{
+void	free_all(std::vector<Server*> servers, std::map<int, Client *> clients, std::vector<pollfd> fds) {
+	for (size_t i = 0; i < servers.size(); i++)
+			delete (servers[i]);
+	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+		close(it->first);
+		delete (it->second);
+	}
+	servers.clear();
+	clients.clear();
+	fds.clear();
+}
+
+int main(int ac, char** av) {
 	if (ac != 2) {
 		std::cerr << "Usage: ./webserv <config_file>\n";
 		return 1;
@@ -54,13 +57,30 @@ int main(int ac, char** av)
 		lastCleanup = time(NULL);
 		while (g_running) {
 			// polling blocks until an event appears
-			int	ret = poll(&fds[0], fds.size(), -1);
+			int	ret = poll(&fds[0], fds.size(), 1000);
 			if (ret < 0) {
 				if (errno == EINTR)
 					continue;
 				throw std::runtime_error("poll failed");
 			}
-			time_t now = time(NULL);
+			time_t	timeout = time(NULL);
+			for (size_t i = 0; i < fds.size(); ++i) {
+				if (clients.find(fds[i].fd) == clients.end())
+					continue;
+				Client* c = clients[fds[i].fd];
+				if (c->getState() != Client::CLOSED && timeout - c->getTime() > 15) {
+					Response	res;
+					HttpResult	r;
+					r.status = "408 Request Timeout";
+					r.body = "<h1>408 Request Timeout</h1>";
+					r.contentType = "text/html";
+					r.contentLength = r.body.size();
+					c->setWriteBuffer(res.buildResponse(r));
+					c->setState(Client::WRITING);
+					fds[i].events |= POLLOUT;
+				}
+			}
+			time_t	now = time(NULL);
 			if (now - lastCleanup >= 10) { // toutes les 10s
 				for (size_t s = 0; s < servers.size(); ++s)
 					servers[s]->getSessionManager().cleanupExpired();
@@ -108,9 +128,13 @@ int main(int ac, char** av)
 					// lecture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLIN) && !c->readFromSocket())// est-ce que la lecture du socket s'est bien passée ?
 						c->setState(Client::CLOSED);
+					else if (fds[i].revents & POLLIN)
+						c->setTime(time(NULL));
 					// ecriture, si erreur -> on met en CLOSED
 					if ((fds[i].revents & POLLOUT) && !c->writeToSocket())
 						c->setState(Client::CLOSED);
+					else if (fds[i].revents & POLLOUT)
+						c->setTime(time(NULL));
 					// si le client ferme ou erreur
 					if (c->getState() == Client::CLOSED) {
 						close(c->getFd());
@@ -134,17 +158,10 @@ int main(int ac, char** av)
 	catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 	}
-	for (size_t i = 0; i < servers.size(); i++)
-			delete (servers[i]);
-	for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
-		close(it->first);
-		delete (it->second);
-	}
-	servers.clear();
-	clients.clear();
-	fds.clear();
+	free_all(servers, clients, fds);
 	return 0;
 }
+
 // Goal:
 // lire config
 // ↓

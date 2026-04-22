@@ -12,7 +12,6 @@ OBJ_DIR     = obj
 CGI_DIR		= www/tetris/cgi-bin
 
 SRC         = $(SRC_DIR)/main.cpp \
-				$(SRC_DIR)/Location.cpp \
 				$(SRC_DIR)/Client.cpp \
 				$(SRC_DIR)/Server.cpp \
 				$(SRC_DIR)/Request.cpp \

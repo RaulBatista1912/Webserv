@@ -14,23 +14,23 @@ class Client {
 			CLOSED
 		};
 	private:
-		int					_fd;					// refers to the client's socket
-		//int					_port;
-		State				_state;					// the current state of the connexion
-		std::string			_readBuffer;			// contain the client's http request
-		std::string			_writeBuffer;			// contain the server's response
+		int					_fd;						// refers to the client's socket
+		State				_state;						// the current state of the connexion
+		std::string			_readBuffer;				// contain the client's http request
+		std::string			_writeBuffer;				// contain the server's response
 		std::string			_queryString;
 		Request				_request;
 		Config&				_config;
 		Server*				_server;
+		time_t				_timeout;
 
 	public:
 		Client(int fd, Config& config, Server* server);	// open the connexion
-		~Client();									// close the connexion
+		~Client();										// close the connexion
 
 		// Public methods
-		bool				readFromSocket();	// read the client's request
-		bool				writeToSocket();	// send the response to the client
+		bool				readFromSocket();			// read the client's request
+		bool				writeToSocket();			// send the response to the client
 		std::string			handleRequest(size_t body_len);
 		HttpResult 			handleCGI(const std::string& path, const ServerConfig* server, const Location* loc); // magie raciste
 		HttpResult			handleGET(std::string& path, const ServerConfig* server, const Location* loc);
@@ -44,10 +44,14 @@ class Client {
 		HttpResult			handleAutoindex(const ServerConfig* server, std::string& path);
 		SessionContext		initSession(Response& res);
 		void				handleLogout(Response& res, HttpResult& r);
- 
+
 		// Getters Setters
-		void				setState(State s);
-		State				getState() const;
-		int					getFd() const;
+		void				setState(State s)							{_state = s;}
+		State				getState() const							{return _state;}
+		int					getFd() const								{return _fd;}
+		void				setWriteBuffer(const std::string& response)	{_writeBuffer = response;}
+		void				setTime(time_t t)							{_timeout = t;}
+		time_t				getTime() const								{return _timeout;}
+
 };
 //Goal: To handle the client's connection

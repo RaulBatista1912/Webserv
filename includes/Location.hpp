@@ -9,14 +9,14 @@ class Location {
 		std::string	uploadPath;
 		std::string	cgiExtension;
 		std::string	cgiPath;
-		std::string redirectPath;   // ex: "/new/path"
-		int 		redirectCode;           // ex: 301
+		std::string redirectPath;	// ex: "/new/path"
+		int 		redirectCode;	// ex: 301
 
 		bool		autoindex;
 		bool		allowGet;
 		bool		allowPost;
 		bool		allowDelete;
 
-		Location();
+		Location() : redirectCode(0), autoindex(false), allowGet(false), allowPost(false), allowDelete(false) {}
 };
 

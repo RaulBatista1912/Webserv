@@ -25,8 +25,8 @@ class Request {
 		const std::string& getMethod() const;
 		const std::string& getPath() const;
 		const std::string& getVersion() const;
+		const std::string& getBody() const;
 		const std::string& getHeader(const std::string& contentType) const;
 		const std::map<std::string, std::string>& getHeaders() const;
-		const std::string& getBody() const;
 		const std::string getCookie(const std::string& name) const;
 };

@@ -163,7 +163,6 @@ const std::string& Request::getHeader(const std::string& key) const {
 	return empty;
 }
 
-
 const std::map<std::string, std::string>& Request::getHeaders() const {
 	return _headers;
 }

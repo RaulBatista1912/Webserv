@@ -204,6 +204,8 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 	else
 		value = body;
 	std::string completePath = server->root + path;
+	if (completePath != "./www/text.txt")
+		return res.handleRequestResponse(server, 403, "403 Forbidden");
 	if (completePath.find("..") != std::string::npos || isDirectory(completePath))
 		return res.handleRequestResponse(server, 403, "403 Forbidden");
 

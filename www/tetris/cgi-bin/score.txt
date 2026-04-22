@@ -10,3 +10,6 @@ name=adsada score=7500
 name=daniel score=0
 name=E9K score=0
 name=E9K score=0
+name=asdasd score=0
+name=caca score=1700
+name=dasdsad score=0

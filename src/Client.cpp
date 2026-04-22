@@ -1,7 +1,7 @@
 #include "../includes/Client.hpp"
 
 Client::Client(int fd, Config& config, Server* server):
-_fd(fd), _state(READING), _config(config), _server(server){}
+_fd(fd), _state(READING), _config(config), _server(server), _timeout(time(NULL)) {}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -201,17 +201,4 @@ void	Client::debugRequest(const std::string &file) {
 	std::cout << _request.getBody() << std::endl;
 	std::cout << "\nServer is searching: " << file << std::endl;
 	std::cout << "----------END REQUEST---------------\n" << std::endl;
-}
-
-// Getters Setters
-void	Client::setState(State s) {
-	_state = s;
-}
-
-Client::State Client::getState() const {
-	return (_state);
-}
-
-int Client::getFd() const {
-	return (_fd);
 }

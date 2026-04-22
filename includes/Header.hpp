@@ -19,4 +19,6 @@
 #include <sys/types.h>
 #include <sys/wait.h> //time
 #include <cerrno> //ERRNO
+#include <poll.h> // poll
+#include <csignal> // signals
 

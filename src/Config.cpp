@@ -231,7 +231,7 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 			if (!path.empty() && path[path.size() - 1] == ';')
 				path.erase(path.size() - 1);
 
-			loc.redirectCode = atoi(codeStr.c_str());
+			loc.redirectCode = std::atoi(codeStr.c_str());
 			loc.redirectPath = path;
 		}
 		else {

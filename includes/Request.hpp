@@ -22,11 +22,11 @@ class Request {
 			extractHeaders(const std::string &rawHeader);
 
 		// Getters Setters
-		const std::string& getMethod() const;
-		const std::string& getPath() const;
-		const std::string& getVersion() const;
-		const std::string& getBody() const;
+		const std::string& getMethod() const								{return _method;}
+		const std::string& getPath() const									{return _path;}
+		const std::string& getVersion() const								{return _version;}
+		const std::string& getBody() const									{return _body;}
+		const std::map<std::string, std::string>& getHeaders() const		{return _headers;}
 		const std::string& getHeader(const std::string& contentType) const;
-		const std::map<std::string, std::string>& getHeaders() const;
 		const std::string getCookie(const std::string& name) const;
 };

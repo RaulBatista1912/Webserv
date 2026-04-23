@@ -12,14 +12,13 @@ class Server {
 		Server(int port, const std::string& root);
 		~Server();
 
-		// Getters Setters
-		int getFd() const;
-		int getPort() const;
-		const std::string& getRoot() const;
-		const std::string& getIndex() const;
-
 		// Public methods
-		int acceptClient() const;
-		SessionManager& getSessionManager();
+		int acceptClient() const			{return (accept(_fd, NULL, NULL));}
+
+		// Getters Setters
+		int getFd() const					{return _fd;};
+		int getPort() const					{return _port;}
+		const std::string& getRoot() const	{return _root;}
+		SessionManager& getSessionManager()	{return _sessionManager;}
 };
 //Goal: To listen the incoming connections

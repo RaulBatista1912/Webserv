@@ -1,7 +1,7 @@
 #include "../includes/Client.hpp"
 
 Client::Client(int fd, Config& config, Server* server):
-_fd(fd), _state(READING), _config(config), _server(server), _timeout(time(NULL)) {}
+_fd(fd), _state(READING), _config(config), _server(server), _timeout(std::time(NULL)) {}
 
 Client::~Client() {
 	if (_fd >= 0)

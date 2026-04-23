@@ -37,20 +37,8 @@ int main(int ac, char** av) {
 	time_t lastCleanup;
 	try {
 		Config config(av[1]);
-		const std::vector<ServerConfig>& serverConfigs = config.getServers();
-
-		// creer un serveur pour chaque port,
-		for (size_t i = 0; i < serverConfigs.size(); ++i) {
-			Server* srv = new Server(serverConfigs[i].port, serverConfigs[i].root);
-			servers.push_back(srv);
-			pollfd p;
-			p.fd = srv->getFd();
-			p.events = POLLIN; // on demande a poll de surveiller POLLIN, en gros dis moi si des clients veulent se connecter
-			p.revents = 0;
-			fds.push_back(p);
-			std::cout << "Listening on port " << serverConfigs[i].port << std::endl; // on afficher que le serv est pret sur ce port
-		}
-		lastCleanup = time(NULL);
+		CreateServers(config, servers, fds);
+		lastCleanup = std::time(NULL);
 		while (g_running) {
 			// polling blocks until an event appears
 			int	ret = poll(&fds[0], fds.size(), 1000);
@@ -60,7 +48,7 @@ int main(int ac, char** av) {
 				throw std::runtime_error("poll failed");
 			}
 			handleTimeout(fds, clients);
-			time_t	now = time(NULL);
+			time_t	now = std::time(NULL);
 			if (now - lastCleanup >= 10) { // toutes les 10s
 				for (size_t s = 0; s < servers.size(); ++s)
 					servers[s]->getSessionManager().cleanupExpired();
@@ -83,7 +71,7 @@ int main(int ac, char** av) {
 				if (isServer && (fds[i].revents & POLLIN))
 					handleSocketServer(currentServer, config, fds, clients);
 				// socket client, lire ou ecrire avec le client
-				else if (fds[i].revents & (POLLIN | POLLOUT | POLLERR | POLLHUP | POLLNVAL)) // vrai si soit POLLIN, soit POLLOUT, soit les deux
+				else if (fds[i].revents & (POLLIN | POLLOUT | POLLERR | POLLHUP | POLLNVAL)) // vrai si on a un des flags
 					handleSocketClient(clients, fds, i);
 			}
 		}

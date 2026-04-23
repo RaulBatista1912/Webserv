@@ -3,7 +3,7 @@
 #include "../includes/Client.hpp"
 
 void	handleTimeout(std::vector<pollfd> &fds, std::map<int, Client *> &clients) {
-	time_t	timeout = time(NULL);
+	time_t	timeout = std::time(NULL);
 	for (size_t i = 0; i < fds.size(); ++i) {
 		if (clients.find(fds[i].fd) == clients.end())
 			continue;
@@ -72,4 +72,20 @@ void	handleSocketClient(std::map<int, Client *> &clients, std::vector<pollfd> &f
 	// si le serveur doit envoyer des donnes au client, on dit a poll de surveiller quand le socket est pret a ecrire
 	if (c->getState() == Client::WRITING)
 		fds[i].events |= POLLOUT;
+}
+
+void	CreateServers(Config &config, std::vector<Server*> &servers, std::vector<pollfd> &fds) {
+	const std::vector<ServerConfig>& serverConfigs = config.getServers();
+
+		// creer un serveur pour chaque port,
+		for (size_t i = 0; i < serverConfigs.size(); ++i) {
+			Server* srv = new Server(serverConfigs[i].port, serverConfigs[i].root);
+			servers.push_back(srv);
+			pollfd p;
+			p.fd = srv->getFd();
+			p.events = POLLIN; // on demande a poll de surveiller POLLIN, en gros dis moi si des clients veulent se connecter
+			p.revents = 0;
+			fds.push_back(p);
+			std::cout << "Listening on port " << serverConfigs[i].port << std::endl; // on afficher que le serv est pret sur ce port
+		}
 }

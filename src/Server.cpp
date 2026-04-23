@@ -11,7 +11,7 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 		throw std::runtime_error("fcntl failed");
 
 	sockaddr_in add_p4;
-	memset(&add_p4, 0, sizeof(add_p4));
+	std::memset(&add_p4, 0, sizeof(add_p4));
 	add_p4.sin_family = AF_INET; 				// IPv4
 	add_p4.sin_addr.s_addr = INADDR_ANY; 		// accepte toutes les interfaces reseau, inet_addr("127.0.0.1") pour seulement localhost
 	add_p4.sin_port = htons(port); 				// definit port, htons() converti host -> network byte order
@@ -30,24 +30,4 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 Server::~Server() {
 	if (_fd >= 0)
 		close(_fd);
-}
-
-int Server::getFd() const {
-	return (_fd);
-}
-
-int Server::getPort() const {
-	return (_port);
-}
-
-const std::string& Server::getRoot() const {
-	return (_root);
-}
-
-SessionManager& Server::getSessionManager() {
-	return _sessionManager;
-}
-
-int Server::acceptClient() const {
-	return (accept(_fd, NULL, NULL));
 }

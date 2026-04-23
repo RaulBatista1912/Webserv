@@ -14,10 +14,10 @@ std::string Response::buildResponse(HttpResult r) {
 	response += "Server: webserv/1.0\r\n";
 
 	// Date (format HTTP)
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 	char dateBuf[128];
-	struct tm *gmt = gmtime(&now);
-	strftime(dateBuf, sizeof(dateBuf), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	struct tm *gmt = std::gmtime(&now);
+	std::strftime(dateBuf, sizeof(dateBuf), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 	response += std::string("Date: ") + dateBuf + "\r\n";
 
 	// Location (uniquement si présent)

@@ -1,7 +1,6 @@
 #pragma once
 #include "Header.hpp"
 #include "ServerConfig.hpp"
-#include "Location.hpp"
 
 class Config {
 	private:

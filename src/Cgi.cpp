@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include "../includes/Header.hpp"
 
 extern char **environ;  //Utiliser pour transmettre au CGI les var d'environ
 

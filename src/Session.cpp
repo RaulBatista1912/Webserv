@@ -10,7 +10,7 @@ Session* SessionManager::getSession(const std::string& sessionId) {
 	if (it == _sessions.end())
 		return NULL;
 
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 	if (it->second.isExpired(now, _ttl)) {
 		_sessions.erase(it);
 		return NULL;
@@ -24,7 +24,7 @@ Session* SessionManager::getSession(const std::string& sessionId) {
 Session& SessionManager::createSession() {
 	Session s;
 	s._id = generateSessionId();
-	s._createdAt = time(NULL);
+	s._createdAt = std::time(NULL);
 	s._lastAccess = s._createdAt;
 	s._visits = 0;
 	_sessions[s._id] = s;
@@ -43,7 +43,7 @@ Session& SessionManager::getOrCreateSession(const std::string& sessionId, bool& 
 
 //Check each session if it expired
 void SessionManager::cleanupExpired() {
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 	for (std::map<std::string, Session>::iterator it = _sessions.begin();
 			it != _sessions.end();) {
 		if (it->second.isExpired(now, _ttl))
@@ -56,10 +56,10 @@ void SessionManager::cleanupExpired() {
 //create the id
 std::string SessionManager::generateSessionId() {
 	std::ostringstream oss;
-	oss << time(NULL) << "_"
-		<< rand() << "_"
-		<< rand() << "_"
-		<< rand();
+	oss << std::time(NULL) << "_"
+		<< std::rand() << "_"
+		<< std::rand() << "_"
+		<< std::rand();
 	return oss.str();
 }
 

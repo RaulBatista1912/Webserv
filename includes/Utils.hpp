@@ -6,3 +6,4 @@ std::string					getContentType(const std::string &path);
 bool						isDirectory(const std::string &path);
 std::string					readFile(const std::string& path);
 bool						isTemporaryAcceptError(int err);
+std::string 				extractQueryParam(const std::string& query, const std::string& key);

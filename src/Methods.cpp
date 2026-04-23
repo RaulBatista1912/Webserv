@@ -2,19 +2,7 @@
 #include "../includes/Session.hpp"
 #include "../includes/Utils.hpp"
 
-// extrait caca depuis user=caca&age=42
-std::string extractQueryParam(const std::string& query, const std::string& key) {
-	size_t pos = query.find(key + "=");
 
-	if (pos == std::string::npos)
-		return "";
-	pos += key.length() + 1;
-	size_t end = query.find("&", pos);
-	if (end == std::string::npos)
-		end = query.length();
-
-	return query.substr(pos, end - pos);
-}
 
 std::string Client::handleRequest(size_t body_len) {
 	Response res;
@@ -28,7 +16,7 @@ std::string Client::handleRequest(size_t body_len) {
 
 	// 1. LOGOUT : avant initSession, pour ne pas recréer de session
 	if (path == "/logout") {
-		handleLogout(res, r);
+		r = handleLogout(server, res);
 		return res.buildResponse(r);
 	}
 
@@ -48,23 +36,7 @@ std::string Client::handleRequest(size_t body_len) {
 	Session& session = *ctx.session;
 
 	// 4. LOGIN : écrit "user" dans la session
-	if (path == "/login" && method == "GET") {
-		std::string file = server->root + "/auth/login.html";
-		std::ifstream f(file.c_str());
-		if (!f)
-			return res.buildResponse(res.handleRequestResponse(server, 404, "404 Not Found"));
-
-		std::stringstream buffer;
-		buffer << f.rdbuf();
-
-		r.status = "200 OK";
-		r.contentType = "text/html";
-		r.body = buffer.str();
-		r.contentLength = r.body.size();
-
-		return res.buildResponse(r);
-	}
-	if (path == "/login" && method == "POST") {
+	if (path == "/login") {
 		r = handleLogin(server, session, method);
 		return res.buildResponse(r);
 	}
@@ -310,51 +282,5 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 	}
 	else
 		r = res.handleRequestResponse(server, 404, "404 Not Found");
-	return r;
-}
-
-HttpResult Client::handleLogin(const ServerConfig* server, Session& session, const std::string& method) {
-	HttpResult	r;
-	Response	res;
-
-	// GET → afficher formulaire
-	if (method == "GET") {
-		std::string body =
-		"<html><body>"
-		"<h1>Login</h1>"
-		"<form method='POST' action='/login'>"
-		"<input type='text' name='user'/>"
-		"<input type='submit' value='Login'/>"
-		"</form>"
-		"</body></html>";
-
-		r.status = "200 OK";
-		r.contentType = "text/html";
-		r.body = body;
-		r.contentLength = body.size();
-		return r;
-	}
-
-	// POST → traiter login
-	if (method == "POST") {
-		std::string body = _request.getBody();
-		std::string user = extractQueryParam(body, "user");
-
-		if (!user.empty())
-			session._data["user"] = user;
-
-		r.status = "200 OK";
-		r.contentType = "text/html";
-		r.body = "<html><body>Logged as " + user +
-		         "<br><a href='/profile'>Go profile</a></body></html>";
-		r.contentLength = r.body.size();
-		return r;
-	}
-	res.handleRequestResponse(server, 405, "405 Method Not Allowed");
-	// autre méthode
-	r.status = "405 Method Not Allowed";
-	r.contentType = "text/plain";
-	r.body = "Method Not Allowed\n";
-	r.contentLength = r.body.size();
 	return r;
 }

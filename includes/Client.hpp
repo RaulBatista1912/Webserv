@@ -40,7 +40,8 @@ class Client {
 		HttpResult			handlePOST(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleUpload(const std::string& path, const ServerConfig* server, const Location* loc);
 		HttpResult			handleLogin(const ServerConfig* server, Session& session, const std::string& method);
-		HttpResult			handleLogout(const ServerConfig* server, Response& res);
+		HttpResult			handleProfile(const ServerConfig* server, Session& session, const std::string& method);
+		HttpResult			handleLogout(const ServerConfig* server, const std::string& method);
 		void 				debugRequest(const std::string &file);
 		const ServerConfig*	findServer() const;
 		SessionContext		initSession(Response& res);

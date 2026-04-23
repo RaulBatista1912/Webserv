@@ -14,9 +14,10 @@ std::string Client::handleRequest(size_t body_len) {
 	const ServerConfig* server = findServer();
 	const Location* loc = server->findLocation(path);
 
+	//debugRequest(path);
 	// 1. LOGOUT : avant initSession, pour ne pas recréer de session
-	if (path == "/logout") {
-		r = handleLogout(server, res);
+	if (path == "/logout" || path == "/auth/logout.html") {
+		r = handleLogout(server, method);
 		return res.buildResponse(r);
 	}
 
@@ -26,6 +27,7 @@ std::string Client::handleRequest(size_t body_len) {
 		return res.buildResponse(r);
 	}
 
+	// check la taille maximale
 	if ((int)body_len > server->max_body_size) {
 		r = res.handleRequestResponse(server, 413, "413 Request Entity Too Large");
 		return res.buildResponse(r);
@@ -36,42 +38,14 @@ std::string Client::handleRequest(size_t body_len) {
 	Session& session = *ctx.session;
 
 	// 4. LOGIN : écrit "user" dans la session
-	if (path == "/login") {
+	if (path == "/login" || path == "/auth/login.html") {
 		r = handleLogin(server, session, method);
 		return res.buildResponse(r);
 	}
 
 	// 6. PROFILE : lit "user" depuis la session chheck si connecté
-	if (path == "/profile") {
-		std::string file = server->root + "/auth/profile.html";
-		std::ifstream f(file.c_str());
-		if (!f)
-			return res.buildResponse(res.handleRequestResponse(server, 404, "404 Not Found"));
-		std::stringstream buffer;
-		buffer << f.rdbuf();
-		std::string body = buffer.str();
-		if (session._data.find("user") != session._data.end()) {
-			std::string user = session._data["user"];
-
-			std::stringstream vs;
-			vs << ++session._visits;
-
-			// remplacer placeholders
-			size_t pos;
-			pos = body.find("{{USER}}");
-			if (pos != std::string::npos)
-				body.replace(pos, 8, user);
-			pos = body.find("{{VISITS}}");
-			if (pos != std::string::npos)
-				body.replace(pos, 10, vs.str());
-		}
-		else {
-			body = "<h1>Not logged in</h1><a href='/login'>Login</a>";
-		}
-		r.status = "200 OK";
-		r.contentType = "text/html";
-		r.body = body;
-		r.contentLength = body.size();
+	if (path == "/profile" || path == "/auth/profile.html") {
+		r = handleProfile(server, session, method);
 		return res.buildResponse(r);
 	}
 

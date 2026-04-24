@@ -176,7 +176,7 @@ HttpResult Client::handleLogin(const ServerConfig* server, Session& session, con
 	// =========================
 	// GET → afficher page login
 	// =========================
-	if (method == "GET")
+	if (method == "GET" || method == "HEAD")
 	{
 		// déjà connecté → redirect
 		if (session._data.find("user") != session._data.end())
@@ -194,10 +194,15 @@ HttpResult Client::handleLogin(const ServerConfig* server, Session& session, con
 			return res.handleRequestResponse(server, 404, "404 Not Found");
 		std::stringstream buffer;
 		buffer << f.rdbuf();
+		std::string content = buffer.str();
 		r.status = "200 OK";
 		r.contentType = "text/html";
-		r.body = buffer.str();
 		r.contentLength = r.body.size();
+		if (method == "GET")
+			r.body = content;
+		else if (method == "HEAD")
+			r.body = "";
+		r.contentLength = content.size();
 		return r;
 	}
 
@@ -242,7 +247,7 @@ HttpResult Client::handleProfile(const ServerConfig* server, Session& session, c
 	HttpResult r;
 	Response res;
 
-	if (method == "GET")
+	if (method == "GET" || method == "HEAD")
 	{
 		std::string file = server->root + "/auth/profile.html";
 		std::ifstream f(file.c_str());
@@ -271,7 +276,10 @@ HttpResult Client::handleProfile(const ServerConfig* server, Session& session, c
 		}
 		r.status = "200 OK";
 		r.contentType = "text/html";
-		r.body = body;
+		if (method == "GET")
+			r.body = body;
+		else if(method == "HEAD")
+			r.body = "";
 		r.contentLength = body.size();
 		return r;
 	}
@@ -284,7 +292,7 @@ HttpResult Client::handleLogout(const ServerConfig* server, const std::string& m
 	HttpResult r;
 	Response res;
 
-	if (method == "GET")
+	if (method == "GET" || method == "HEAD")
 	{
 		SessionManager& sm = _server->getSessionManager();
 		std::string sid = _request.getCookie("session_id");
@@ -298,10 +306,14 @@ HttpResult Client::handleLogout(const ServerConfig* server, const std::string& m
 			return res.handleRequestResponse(server, 404, "404 Not Found");
 		std::stringstream buffer;
 		buffer << f.rdbuf();
+		std::string body = buffer.str();
 		r.status = "200 OK";
 		r.contentType = "text/html";
-		r.body = buffer.str();
-		r.contentLength = r.body.size();
+		if (method == "GET")
+			r.body = body;
+		else if (method == "HEAD")
+			r.body = "";
+		r.contentLength = body.size();
 		return r;
 	}
 	return res.handleRequestResponse(server, 405, "405 Method Not Allowed");

@@ -173,9 +173,6 @@ HttpResult Client::handleLogin(const ServerConfig* server, Session& session, con
 	HttpResult r;
 	Response res;
 
-	// =========================
-	// GET → afficher page login
-	// =========================
 	if (method == "GET" || method == "HEAD")
 	{
 		// déjà connecté → redirect
@@ -206,20 +203,21 @@ HttpResult Client::handleLogin(const ServerConfig* server, Session& session, con
 		return r;
 	}
 
-	// =========================
-	// POST → traiter login
-	// =========================
 	if (method == "POST")
 	{
 		std::string body = _request.getBody();
 		std::string user = extractQueryParam(body, "user");
 
-		// validation
-		if (user.empty())
+		user = urlDecode(user);
+		// 🔥 trim
+		user = trim(user);
+
+		// 🔥 validation stricte
+		if (!isValidUsername(user))
 		{
 			r.status = "400 Bad Request";
 			r.contentType = "text/html";
-			r.body = "<html><body><h1>400 Bad Request</h1><p>Missing username</p></body></html>";
+			r.body = "<html><body><h1>400 Bad Request</h1><p>Invalid username</p></body></html>";
 			r.contentLength = r.body.size();
 			return r;
 		}
@@ -227,18 +225,15 @@ HttpResult Client::handleLogin(const ServerConfig* server, Session& session, con
 		// enregistrer session
 		session._data["user"] = user;
 
-		// redirect vers profile
+		// redirect
 		r.status = "302 Found";
 		r.headers["Location"] = "/profile";
 		r.body = "";
 		r.contentType = "text/html";
 		r.contentLength = 0;
+
 		return r;
 	}
-
-	// =========================
-	// AUTRES MÉTHODES → 405
-	// =========================
 	return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
 }
 

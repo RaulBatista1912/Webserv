@@ -63,3 +63,59 @@ std::string extractQueryParam(const std::string& query, const std::string& key) 
 
 	return query.substr(pos, end - pos);
 }
+
+std::string trim(const std::string& s)
+{
+	size_t start = 0;
+	while (start < s.size() && std::isspace(s[start]))
+		start++;
+
+	size_t end = s.size();
+	while (end > start && std::isspace(s[end - 1]))
+		end--;
+
+	std::string out = s.substr(start, end - start);
+	std::cout <<"'"<<out << "'" << std::endl;
+	return s.substr(start, end - start);
+}
+
+bool isValidUsername(const std::string& user)
+{
+	if (user.empty())
+		return false;
+
+	if (user.size() > 20) // limite anti abus
+		return false;
+
+	for (size_t i = 0; i < user.size(); i++)
+	{
+		char c = user[i];
+
+		if (!(std::isalnum(c) || c == '_' || c == '-'))
+			return false;
+	}
+	return true;
+}
+
+std::string urlDecode(const std::string& str)
+{
+	std::string result;
+
+	for (size_t i = 0; i < str.size(); i++)
+	{
+		if (str[i] == '+')
+			result += ' ';
+		else if (str[i] == '%' && i + 2 < str.size())
+		{
+			int value;
+			std::stringstream ss;
+			ss << std::hex << str.substr(i + 1, 2);
+			ss >> value;
+			result += static_cast<char>(value);
+			i += 2;
+		}
+		else
+			result += str[i];
+	}
+	return result;
+}

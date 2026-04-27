@@ -81,7 +81,7 @@ Protocol: Usually TCP (connection-oriented, reliable) or UDP (connectionless, fa
 # Commands
 
 ### GET
-GET text: curl -X GET http://localhost:8080/test.txt
+GET text: curl -X GET http://localhost:8080/text.txt
 
 GET security: curl --path-as-is http://localhost:8080/../default.conf
 
@@ -91,6 +91,10 @@ Download image: curl http://locahost:8080/images/aaa.jpg -o image.jpg
 POST text: curl -X POST http://localhost:8080/test.txt -d "hello"
 
 POST image: curl -X POST -F "file=@chemin/vers/image.png" http://localhost:8080/uploads/
+
+POST login: curl -c cookies.txt -X POST http://localhost:8080/login -d "user=caca"
+
+POST profile: curl -b cookies.txt http://localhost:8080/profile
 
 ### DELETE
 curl -X DELETE http://localhost:8080/uploads/img.png
@@ -113,3 +117,4 @@ for i in {1..50}; do curl -s http://localhost:8080/session-test & done
 Daniel:
 - parse empty user
 - injections html
+

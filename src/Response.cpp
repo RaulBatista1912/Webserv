@@ -45,10 +45,8 @@ std::string Response::buildResponse(HttpResult r) {
 	for (size_t i = 0; i < _setCookies.size(); ++i) {
 		response += "Set-Cookie: " + _setCookies[i] + "\r\n";
 	}
-
 	// Fin des headers
 	response += "\r\n";
-
 	// Body
 	response += r.body;
 

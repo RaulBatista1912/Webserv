@@ -75,7 +75,6 @@ std::string trim(const std::string& s)
 		end--;
 
 	std::string out = s.substr(start, end - start);
-	std::cout <<"'"<<out << "'" << std::endl;
 	return s.substr(start, end - start);
 }
 

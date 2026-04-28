@@ -97,7 +97,7 @@ POST login: curl -c cookies.txt -X POST http://localhost:8080/login -d "user=cac
 POST profile: curl -b cookies.txt http://localhost:8080/profile
 
 ### DELETE
-curl -X DELETE http://localhost:8080/uploads/img.png
+curl -X DELETE http://localhost:8080/uploads/img.jpg
 
 ### HEAD
 curl --head http://localhost:8080/images/fat.jpg

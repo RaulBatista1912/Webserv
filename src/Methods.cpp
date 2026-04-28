@@ -14,14 +14,13 @@ std::string Client::handleRequest(size_t body_len) {
 	const ServerConfig* server = findServer();
 	const Location* loc = server->findLocation(path);
 
-	//debugRequest(path);
-	// 1. LOGOUT : avant initSession, pour ne pas recréer de session
+	// LOGOUT : avant initSession, pour ne pas recréer de session
 	if (path == "/logout" || path == "/auth/logout.html") {
 		r = handleLogout(server, method);
 		return res.buildResponse(r);
 	}
 
-	// 2. Vérifications globales
+	// Vérifications globales
 	if (_request.getVersion() != "HTTP/1.1") {
 		r = res.handleRequestResponse(server, 505, "505 HTTP Version Not Supported");
 		return res.buildResponse(r);
@@ -33,23 +32,23 @@ std::string Client::handleRequest(size_t body_len) {
 		return res.buildResponse(r);
 	}
 
-	// 3. Init session pour les routes qui en ont besoin
-	SessionContext ctx = initSession(res);
-	Session& session = *ctx.session;
-
-	// 4. LOGIN : écrit "user" dans la session
+	// LOGIN : écrit "user" dans la session
 	if (path == "/login" || path == "/auth/login.html") {
+		SessionContext ctx = initSession(res);
+		Session& session = *ctx.session;
 		r = handleLogin(server, session, method);
 		return res.buildResponse(r);
 	}
 
-	// 6. PROFILE : lit "user" depuis la session chheck si connecté
+	// PROFILE : lit "user" depuis la session chheck si connecté
 	if (path == "/profile" || path == "/auth/profile.html") {
+		SessionContext ctx = initSession(res);
+		Session& session = *ctx.session;
 		r = handleProfile(server, session, method);
 		return res.buildResponse(r);
 	}
 
-	// 7. Routing normal
+	// Routing normal
 	if (method == "GET")
 		r = handleGET(path, server, loc);
 	else if (method == "POST")
@@ -167,14 +166,16 @@ HttpResult Client::handlePOST(const std::string& path, const ServerConfig* serve
 HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* server, const Location* loc)
 {
 	Response	res;
-	// 1. Vérifier si DELETE est autorisé
+	HttpResult r;
+
+	// Vérifier si DELETE est autorisé
 	if (loc && !loc->allowDelete)
 		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
 
-	// 2. Construire le chemin réel
+	// Construire le chemin réel
 	const std::string completePath = server->root + path;
 
-	// 3. Sécurité basique
+	// Sécurité basique
 	if (completePath.find("..") != std::string::npos ||
 		completePath.find(".html") != std::string::npos ||
 		completePath.find(".js") != std::string::npos ||
@@ -183,16 +184,18 @@ HttpResult Client::handleDELETE(const std::string& path, const ServerConfig* ser
 		isDirectory(completePath))
 		return res.handleRequestResponse(server, 403, "403 Forbidden");
 
-	// 5. Vérifier si le fichier existe
+	// Vérifier si le fichier existe
 	if (0 > access(completePath.c_str(), F_OK | W_OK))
 		return res.handleRequestResponse(server, 404, "404 Not Found");
 
-	// 6. Supprimer
+	// Supprimer
 	if (std::remove(completePath.c_str()) != 0)
 		return res.handleRequestResponse(server, 500, "500 Internal Server Error");
 
-	// 7. Succès
-	return res.handleRequestResponse(server, 204, "204 No Content");
+	// Succès
+	r = res.handleRequestResponse(server, 204, "204 No Content");
+	r.contentLength = 0;
+	return r;
 }
 
 HttpResult	Client::handleHEAD(std::string& path, const ServerConfig* server, const Location* loc) {

@@ -16,7 +16,8 @@ class Location {
 		bool		allowGet;
 		bool		allowPost;
 		bool		allowDelete;
+		bool		allowCgi;
 
-		Location() : redirectCode(0), autoindex(false), allowGet(false), allowPost(false), allowDelete(false) {}
+		Location() : redirectCode(0), autoindex(false), allowGet(false), allowPost(false), allowDelete(false), allowCgi(false) {}
 };
 

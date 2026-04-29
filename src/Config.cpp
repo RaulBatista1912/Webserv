@@ -211,8 +211,10 @@ void Config::ParseLocationBlock(std::ifstream& file, Location& loc) {
 			loc.root = trim(line.substr(4));
 		else if (line.find("index") == 0)
 			loc.index = removeSemicolon(line.substr(5));
-		else if (line.find("cgi_extension") == 0)
+		else if (line.find("cgi_extension") == 0) {
 			loc.cgiExtension = trim(line.substr(13));
+			loc.allowCgi = true;
+		}
 		else if (line.find("cgi_path") == 0)
 			loc.cgiPath = trim(line.substr(8));
 		else if (line.find("return") == 0) {

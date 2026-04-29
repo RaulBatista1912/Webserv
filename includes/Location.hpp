@@ -16,6 +16,7 @@ class Location {
 		bool		allowGet;
 		bool		allowPost;
 		bool		allowDelete;
+		bool		allowCgi;
 
 		Location();
 };

@@ -276,8 +276,13 @@ HttpResult	Client::handleGET(std::string& path, const ServerConfig* server, cons
 		}
 	}
 	file = server->root + path;
-	if (path.find(".cgi") != std::string::npos)
+	if (path.find(".cgi") != std::string::npos) {
+		if (loc->allowCgi == false) {
+			r = res.handleRequestResponse(server, 403, "403 Forbidden");
+			return r;
+		}
 		return handleCGI(path, server, loc);
+	}
 	std::ifstream webPage(file.c_str(), std::ios::binary);
 	if (webPage) {
 		std::stringstream buffer;

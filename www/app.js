@@ -9,6 +9,40 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    var sortBtn = document.getElementById("sort-btn");
+    var sortInput = document.getElementById("sort-input");
+    var sortResult = document.getElementById("sort-result");
+
+    if (sortBtn && sortInput && sortResult) {
+        function runSort() {
+            var raw = sortInput.value.trim();
+            if (!raw) {
+                sortResult.textContent = "Enter a comma-separated list like 2,7,2,6,8,1.";
+                return;
+            }
+
+            sortResult.textContent = "Sorting...";
+            fetch("/sort/sort.cgi?numbers=" + encodeURIComponent(raw), {
+                method: "GET"
+            })
+                .then(function (res) {
+                    return res.text();
+                })
+                .then(function (text) {
+                    sortResult.textContent = text;
+                })
+                .catch(function () {
+                    sortResult.textContent = "Sort CGI request failed.";
+                });
+        }
+
+        sortBtn.addEventListener("click", runSort);
+        sortInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter")
+                runSort();
+        });
+    }
+
 });
 
 

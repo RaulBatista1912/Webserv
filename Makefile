@@ -12,7 +12,6 @@ OBJ_DIR     = obj
 CGI_DIR		= www/tetris/cgi-bin
 
 SRC         = $(SRC_DIR)/main.cpp \
-				$(SRC_DIR)/Location.cpp \
 				$(SRC_DIR)/Client.cpp \
 				$(SRC_DIR)/Server.cpp \
 				$(SRC_DIR)/Request.cpp \
@@ -22,7 +21,8 @@ SRC         = $(SRC_DIR)/main.cpp \
 				$(SRC_DIR)/Utils.cpp \
 				$(SRC_DIR)/Methods.cpp \
 				$(SRC_DIR)/Cgi.cpp \
-				$(SRC_DIR)/Session.cpp
+				$(SRC_DIR)/Session.cpp \
+				$(SRC_DIR)/Poll.cpp
 
 OBJ         = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 

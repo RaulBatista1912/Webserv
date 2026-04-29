@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include "../includes/Header.hpp"
 
 extern char **environ;  //Utiliser pour transmettre au CGI les var d'environ
 
@@ -124,7 +125,7 @@ extern char **environ;  //Utiliser pour transmettre au CGI les var d'environ
  		if (r.contentType.empty())
  			r.contentType = "text/plain";
 		r.contentLength = r.body.size();
- 		std::cout << "[CGI] query='" << _queryString << "' body='" << r.body << "'" << std::endl;
+ 		//std::cout << "[CGI] query='" << _queryString << "' body='" << r.body << "'" << std::endl;
  		return r;
  	}
  }

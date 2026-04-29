@@ -1,7 +1,8 @@
 #include "../includes/Client.hpp"
+#include "../includes/Utils.hpp"
 
 Client::Client(int fd, Config& config, Server* server):
-_fd(fd), _state(READING), _config(config), _server(server){}
+_fd(fd), _state(READING), _config(config), _server(server), _timeout(std::time(NULL)) {}
 
 Client::~Client() {
 	if (_fd >= 0)
@@ -101,30 +102,19 @@ HttpResult	Client::handleAutoindex(const ServerConfig* server, std::string& path
 }
 
 bool	Client::readFromSocket() {
-	char buffer[4096];
-	while (true) {
-		ssize_t bytes = recv(_fd, buffer, sizeof(buffer), 0);
-		if (bytes > 0) {
-			_readBuffer.append(buffer, bytes);
-			if (bytes < static_cast<ssize_t>(sizeof(buffer)))
-				break;
-		}
-		else if (bytes == 0) {
-			return false;
-		}
-		else {
-			if (errno == EINTR)
-				continue;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-			return false;
-		}
-	}
+	char	buffer[4096];
+	int	bytes = recv(_fd, buffer, sizeof(buffer), 0);
+
+	if (bytes <= 0)
+		return false;
+	_readBuffer.append(buffer, bytes);
 	size_t header_end = _readBuffer.find("\r\n\r\n");
 	if (header_end == std::string::npos)
 		return true;
 	size_t body_len = 0;
 	std::string headers = _readBuffer.substr(0, header_end + 4);
+	if (header_end == std::string::npos)
+		return true;
 	// ensuite seulement parser les headers
 	std::map<std::string, std::string> h = _request.extractHeaders(headers);
 	if (h.count("Content-Length"))
@@ -154,19 +144,12 @@ bool	Client::writeToSocket() {
 		_state = CLOSED;
 		return (false);
 	}
-	while (!_writeBuffer.empty()) {
-		ssize_t sent = send(_fd, _writeBuffer.c_str(), _writeBuffer.size(), 0);
-		if (sent > 0) {
-			_writeBuffer.erase(0, sent);
-			continue;
-		}
-		if (sent < 0 && errno == EINTR)
-			continue;
-		if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-			break;
+	ssize_t sent = send(_fd, _writeBuffer.c_str(), _writeBuffer.size(), 0);
+	if (sent <= 0) {
 		_state = CLOSED;
 		return (false);
 	}
+	_writeBuffer.erase(0, sent);
 	if (_writeBuffer.empty())
 		_state = CLOSED;
 	return (true);
@@ -185,21 +168,150 @@ SessionContext Client::initSession(Response& res) {
 	return ctx;
 }
 
+HttpResult Client::handleLogin(const ServerConfig* server, Session& session, const std::string& method)
+{
+	HttpResult r;
+	Response res;
 
-void Client::handleLogout(Response& res, HttpResult& r) {
-	SessionManager& sm = _server->getSessionManager();
+	if (method == "GET" || method == "HEAD")
+	{
+		// déjà connecté → redirect
+		if (session._data.find("user") != session._data.end())
+		{
+			r.status = "302 Found";
+			r.headers["Location"] = "/profile";
+			r.body = "";
+			r.contentType = "text/html";
+			r.contentLength = 0;
+			return r;
+		}
+		std::string file = server->root + "/auth/login.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.handleRequestResponse(server, 404, "404 Not Found");
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		std::string content = buffer.str();
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		r.contentLength = r.body.size();
+		if (method == "GET")
+			r.body = content;
+		else if (method == "HEAD")
+			r.body = "";
+		r.contentLength = content.size();
+		return r;
+	}
 
-	std::string sid = _request.getCookie("session_id");
+	if (method == "POST")
+	{
+		std::string body = _request.getBody();
+		std::string user = extractQueryParam(body, "user");
 
-	if (!sid.empty())
-		sm.deleteSession(sid);
+		user = urlDecode(user);
+		// 🔥 trim
+		user = trim(user);
 
-	res.addSetCookie("session_id=deleted; Path=/; Max-Age=0; HttpOnly");
+		// 🔥 validation stricte
+		if (!isValidUsername(user))
+		{
+			r.status = "400 Bad Request";
+			r.contentType = "text/html";
+			r.body = "<html><body><h1>400 Bad Request</h1><p>Invalid username</p></body></html>";
+			r.contentLength = r.body.size();
+			return r;
+		}
 
-	r.status = "200 OK";
-	r.body = "logged out\n";
-	r.contentType = "text/plain";
-	r.contentLength = r.body.size();
+		// enregistrer session
+		session._data["user"] = user;
+
+		// redirect
+		r.status = "302 Found";
+		r.headers["Location"] = "/profile";
+		r.body = "";
+		r.contentType = "text/html";
+		r.contentLength = 0;
+
+		return r;
+	}
+	return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
+}
+
+HttpResult Client::handleProfile(const ServerConfig* server, Session& session, const std::string& method)
+{
+	HttpResult r;
+	Response res;
+
+	if (method == "GET" || method == "HEAD")
+	{
+		std::string file = server->root + "/auth/profile.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.handleRequestResponse(server, 404, "404 Not Found");
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		std::string body = buffer.str();
+		if (session._data.find("user") != session._data.end()) {
+			std::string user = session._data["user"];
+
+			std::stringstream vs;
+			vs << ++session._visits;
+
+			// remplacer placeholders
+			size_t pos;
+			pos = body.find("{{USER}}");
+			if (pos != std::string::npos)
+				body.replace(pos, 8, user);
+			pos = body.find("{{VISITS}}");
+			if (pos != std::string::npos)
+				body.replace(pos, 10, vs.str());
+		}
+		else {
+			body = "<h1>Not logged in</h1><a href='/login'>Login</a>";
+		}
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		if (method == "GET")
+			r.body = body;
+		else if(method == "HEAD")
+			r.body = "";
+		r.contentLength = body.size();
+		return r;
+	}
+	if (method == "POST" || method == "DELETE")
+		return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
+	return res.handleRequestResponse(server, 501, "501 Not Implemented");
+}
+
+HttpResult Client::handleLogout(const ServerConfig* server, const std::string& method) {
+	HttpResult r;
+	Response res;
+
+	if (method == "GET" || method == "HEAD")
+	{
+		SessionManager& sm = _server->getSessionManager();
+		std::string sid = _request.getCookie("session_id");
+
+		if (!sid.empty())
+			sm.deleteSession(sid);
+		res.addSetCookie("session_id=deleted; Path=/; Max-Age=0; HttpOnly");
+		std::string file = server->root + "/auth/logout.html";
+		std::ifstream f(file.c_str());
+		if (!f)
+			return res.handleRequestResponse(server, 404, "404 Not Found");
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		std::string body = buffer.str();
+		r.status = "200 OK";
+		r.contentType = "text/html";
+		if (method == "GET")
+			r.body = body;
+		else if (method == "HEAD")
+			r.body = "";
+		r.contentLength = body.size();
+		return r;
+	}
+	return res.handleRequestResponse(server, 405, "405 Method Not Allowed");
 }
 
 void	Client::debugRequest(const std::string &file) {
@@ -219,17 +331,4 @@ void	Client::debugRequest(const std::string &file) {
 	std::cout << _request.getBody() << std::endl;
 	std::cout << "\nServer is searching: " << file << std::endl;
 	std::cout << "----------END REQUEST---------------\n" << std::endl;
-}
-
-// Getters Setters
-void	Client::setState(State s) {
-	_state = s;
-}
-
-Client::State Client::getState() const {
-	return (_state);
-}
-
-int Client::getFd() const {
-	return (_fd);
 }

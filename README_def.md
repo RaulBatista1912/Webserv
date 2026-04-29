@@ -81,19 +81,23 @@ Protocol: Usually TCP (connection-oriented, reliable) or UDP (connectionless, fa
 # Commands
 
 ### GET
-GET text: curl -X GET http://localhost:8080/test.txt
+GET text: curl -X GET http://localhost:8080/text.txt
 
 GET security: curl --path-as-is http://localhost:8080/../default.conf
 
-Download image: curl http://locahost:8080/images/aaa.jpg -o image.jpg 
+Download image: curl http://locahost:8080/images/aaa.jpg -o image.jpg
 
 ### POST
 POST text: curl -X POST http://localhost:8080/test.txt -d "hello"
 
 POST image: curl -X POST -F "file=@chemin/vers/image.png" http://localhost:8080/uploads/
 
+POST login: curl -c cookies.txt -X POST http://localhost:8080/login -d "user=caca"
+
+POST profile: curl -b cookies.txt http://localhost:8080/profile
+
 ### DELETE
-curl -X DELETE http://localhost:8080/uploads/img.png
+curl -X DELETE http://localhost:8080/uploads/img.jpg
 
 ### HEAD
 curl --head http://localhost:8080/images/fat.jpg
@@ -103,20 +107,14 @@ only headers: curl -v http://localhost:8080/old
 
 headers + body: curl -vL http://localhost:8080/old
 
-### Session
+### Login
+curl -X POST http://localhost:8080/login -d "user=daniel"
 
-sans cookies: curl -i http://localhost:8080/session-test
-
-avec cookies: curl -i --cookie "session_id=LE_ID" http://localhost:8080/session-test
-
-### Session sauvegarde le cookie
-
-sauvegarde cookie: curl -i -c cookies.txt http://localhost:8080/session-test
-
-voir cookie: cat cookies.txt
-
-utiliser le cookie: curl -i -b cookies.txt http://localhost:8080/session-test
 
 #### requêtes rapides
 for i in {1..50}; do curl -s http://localhost:8080/session-test & done
+
+Daniel:
+- parse empty user
+- injections html
 

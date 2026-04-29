@@ -138,22 +138,6 @@ const std::string Request::getCookie(const std::string& name) const {
 	return it->second;
 }
 
-const std::string& Request::getMethod() const {
-	return _method;
-}
-
-const std::string& Request::getPath() const {
-	return _path;
-}
-
-const std::string& Request::getVersion() const {
-	return _version;
-}
-
-const std::string& Request::getBody() const {
-	return _body;
-}
-
 const std::string& Request::getHeader(const std::string& key) const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
 	if (it != _headers.end())
@@ -161,9 +145,4 @@ const std::string& Request::getHeader(const std::string& key) const {
 
 	static const std::string empty = "";
 	return empty;
-}
-
-
-const std::map<std::string, std::string>& Request::getHeaders() const {
-	return _headers;
 }

@@ -173,6 +173,8 @@ void Config::ParseServerBlock(std::ifstream& file) {
 			throw std::runtime_error("Unknown directive in server block: '" + line + "'");
 		}
 	}
+	if (server.port == -1)
+		throw std::runtime_error("Invalid Port");
 	_servers.push_back(server);
 }
 

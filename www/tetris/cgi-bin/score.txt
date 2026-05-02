@@ -13,3 +13,4 @@ name=E9K score=0
 name=asdasd score=0
 name=caca score=1700
 name=dasdsad score=0
+name=caca score=100

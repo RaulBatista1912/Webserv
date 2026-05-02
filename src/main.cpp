@@ -41,7 +41,7 @@ int main(int ac, char** av) {
 		lastCleanup = std::time(NULL);
 		while (g_running) {
 			// polling blocks until an event appears
-			int	ret = poll(&fds[0], fds.size(), 1000);
+			int	ret = poll(&fds[0], fds.size(), 1000); //update each 1s
 			if (ret < 0) {
 				if (errno == EINTR)
 					continue;

@@ -16,10 +16,6 @@ Server::Server(int port, const std::string& root): _fd(-1), _port(port), _root(r
 	add_p4.sin_addr.s_addr = INADDR_ANY; 		// accepte toutes les interfaces reseau, inet_addr("127.0.0.1") pour seulement localhost
 	add_p4.sin_port = htons(port); 				// definit port, htons() converti host -> network byte order
 
-	add_p4.sin_family = AF_INET; 				// IPv4
-	add_p4.sin_addr.s_addr = INADDR_ANY; 		// accepte toutes les interfaces reseau
-	add_p4.sin_port = htons(port); 				// definit port, htons() converti host -> network byte order
-
 	//	CHECK ADD_P4
 	if (bind(_fd, (sockaddr*)&add_p4, sizeof(add_p4)) < 0) // associe le socket serveur a l'addresse IP + port
 		throw std::runtime_error("bind failed");

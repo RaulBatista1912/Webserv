@@ -40,7 +40,10 @@ Webserv includes a demonstration interface served directly by the custom C++98 H
 The interface provides interactive tests for the main implemented features:
 
 - Session handling with login, profile and logout
+- File download and deletion
 - CGI execution through a number sorting demo
+- Permanent redirection (`301`)
+- Custom HTTP error pages
 - Concurrent request test to illustrate non-blocking client handling with `poll()`
 
 

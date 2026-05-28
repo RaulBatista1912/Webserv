@@ -41,8 +41,14 @@ The interface provides interactive tests for the main implemented features:
 
 - Session handling with login, profile and logout
 - CGI execution through a number sorting demo
+- Permanent redirection (`301`)
+- Custom HTTP error pages
 - Concurrent request test to illustrate non-blocking client handling with `poll()`
 
+
+
+
+https://github.com/user-attachments/assets/534a0917-c190-4b29-beef-bd4d2484b5d3
 
 
 

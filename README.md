@@ -1,5 +1,3 @@
-*This project has been created as part of the 42 curriculum by <login1>, <login2>.*
-
 # 🌐 Webserv
 
 ## 📖 Description
@@ -9,7 +7,8 @@ The goal of this project is to understand how web servers work internally by rec
 
 The server is capable of handling multiple clients simultaneously using non-blocking I/O (`poll()`), parsing HTTP requests, and generating appropriate responses.
 
-![alt text](<Capture d'écran 2026-05-28 193840.png>)
+<img width="2537" height="1082" alt="Capture d&#39;écran 2026-05-28 193840" src="https://github.com/user-attachments/assets/2a837c04-72e3-452f-bd4f-4e1eda759817" />
+
 
 ### Core Features
 
@@ -44,7 +43,9 @@ The interface provides interactive tests for the main implemented features:
 - CGI execution through a number sorting demo
 - Concurrent request test to illustrate non-blocking client handling with `poll()`
 
-<video controls src="Enregistrement de l'écran 2026-05-28 193547.mp4" title="webserv"></video>
+
+
+
 
 ## ⚙️ Instructions
 

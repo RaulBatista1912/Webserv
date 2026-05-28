@@ -1,22 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>501 - Method Not Allowed</title>
-<link rel="stylesheet" href="/style.css">
-
-<link rel="icon" type="image/jpg" href="/images/gamewatch.gif">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>501 Not Implemented | Webserv</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<div>
-    <img type="image/jpg" src="/images/gamewatch.gif" alt="gamewatch">
-    <h1>501</h1>
-    <p>Not Implemented</p>
-    <p>It doesn't exist bro</p>
-    <a href="/">come back home</a>
-</div>
+<body class="min-h-screen bg-[#080d18] font-sans text-slate-100 antialiased">
+  <div class="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12">
+    <!-- Background decoration -->
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div class="absolute left-1/2 top-[-15rem] h-[32rem] w-[48rem] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl"></div>
+      <div class="absolute bottom-[-12rem] right-[-8rem] h-[26rem] w-[26rem] rounded-full bg-blue-600/10 blur-3xl"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.035)_1px,transparent_1px)] bg-[size:52px_52px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"></div>
+    </div>
 
+    <main class="relative w-full max-w-xl text-center">
+      <a
+        href="/"
+        class="mb-10 inline-flex items-center gap-3"
+        aria-label="Return to Webserv homepage"
+      >
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/10 text-sm font-bold text-sky-300">
+          WS
+        </span>
+
+        <span class="text-left">
+          <span class="block text-base font-semibold text-white">Webserv</span>
+          <span class="block text-xs text-slate-400">HTTP/1.1 Server</span>
+        </span>
+      </a>
+
+      <section class="rounded-3xl border border-white/10 bg-[#101827]/90 px-7 py-10 shadow-2xl shadow-sky-950/30 backdrop-blur sm:px-12">
+        <!-- Error icon -->
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-indigo-300/20 bg-indigo-300/10">
+          <svg
+            class="h-8 w-8 text-indigo-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M8 9l3 3-3 3m5 0h3M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
+            />
+          </svg>
+        </div>
+
+        <p class="font-mono text-sm font-semibold uppercase tracking-[0.28em] text-indigo-300">
+          Error 501
+        </p>
+
+        <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Not implemented
+        </h1>
+
+        <p class="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-400 sm:text-base">
+          The server does not support the functionality required to fulfill
+          this request. Please use an implemented endpoint or return home.
+        </p>
+
+        <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <a
+            href="/"
+            class="rounded-xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+          >
+            Return home
+          </a>
+
+          <a
+            href="/#demo"
+            class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.08]"
+          >
+            View available tests
+          </a>
+        </div>
+      </section>
+
+      <p class="mt-7 text-xs text-slate-500">
+        HTTP/1.1 response handled by the custom C++98 Webserv server.
+      </p>
+    </main>
+  </div>
 </body>
 </html>

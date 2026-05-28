@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>413 Payload Too Large | Webserv</title>
+  <title>301 Moved Permanently | Webserv</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -17,10 +17,15 @@
     </div>
 
     <main class="relative w-full max-w-xl text-center">
-      <a href="/" class="mb-10 inline-flex items-center gap-3" aria-label="Return to Webserv homepage">
+      <a
+        href="/"
+        class="mb-10 inline-flex items-center gap-3"
+        aria-label="Return to Webserv homepage"
+      >
         <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/10 text-sm font-bold text-sky-300">
           WS
         </span>
+
         <span class="text-left">
           <span class="block text-base font-semibold text-white">Webserv</span>
           <span class="block text-xs text-slate-400">HTTP/1.1 Server</span>
@@ -28,37 +33,61 @@
       </a>
 
       <section class="rounded-3xl border border-white/10 bg-[#101827]/90 px-7 py-10 shadow-2xl shadow-sky-950/30 backdrop-blur sm:px-12">
-        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-orange-300/20 bg-orange-300/10">
-        <svg class="h-8 w-8 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 16V4m0 0L8 8m4-4 4 4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" />
-        </svg>
+        <!-- Redirect icon -->
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10">
+          <svg
+            class="h-8 w-8 text-emerald-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M13.5 6H18a3 3 0 013 3v2m0 0-3-3m3 3-3 3M10.5 18H6a3 3 0 01-3-3v-2m0 0 3 3m-3-3 3-3M8 8l8 8"
+            />
+          </svg>
         </div>
 
-        <p class="font-mono text-sm font-semibold uppercase tracking-[0.28em] text-orange-300">
-        Error 413
+        <p class="font-mono text-sm font-semibold uppercase tracking-[0.28em] text-emerald-300">
+          Response 301
         </p>
 
         <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-        File too large
+          Moved permanently
         </h1>
 
         <p class="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-400 sm:text-base">
-        The uploaded payload exceeds the maximum size configured for this endpoint.
-        Please choose a smaller file.
+          The requested resource has been permanently moved to a new location.
+          Your browser should follow the redirection automatically.
         </p>
 
-        <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-        <a href="/" class="rounded-xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300">
-            Return home
-        </a>
-        <a href="/login" class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.08]">
-                    Log in
-                </a>
-        <a href="/uploads/" class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.08]">
-            Browse uploads
-        </a>
+        <div class="mt-8 rounded-xl border border-white/10 bg-[#080d18] p-4 text-left">
+          <p class="text-xs font-medium uppercase tracking-wider text-slate-500">
+            HTTP response
+          </p>
+
+          <pre class="mt-3 overflow-x-auto font-mono text-sm leading-6 text-slate-300"><span class="text-emerald-300">HTTP/1.1 301 Moved Permanently</span>
+Location: <span class="text-sky-300">/new</span></pre>
         </div>
 
+        <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <a
+            href="/new/index.html"
+            class="rounded-xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+          >
+            Continue to new location
+          </a>
+
+          <a
+            href="/"
+            class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.08]"
+          >
+            Return home
+          </a>
+        </div>
       </section>
 
       <p class="mt-7 text-xs text-slate-500">

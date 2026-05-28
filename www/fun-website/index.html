@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ServWeb</title>
+	<link rel="icon" type="image/gif" href="images/glorp-slam.gif">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<header class="site-header">
+		<h1>Webserv</h1>
+		<p class="subtitle"> Server in Snus </p>
+	</header>
+	<main class="container">
+		<section class="card">
+			<img src="images/rat.jpg" alt="chips" class="hero-image">
+			<!--POST TEXT--------->
+			<audio controls>
+			<source src="music/spongebob.mp3" type="audio/ogg">
+			<source src="music/spongebob.mp3" type="audio/mpeg">
+			Your browser does not support the audio element.
+			</audio>
+			<!--CONNEXION---------->
+			<div style="text-align: center; margin: 0.5rem 0;">
+				<a href="/login" class="main-button upload-button">Log In</a>
+			</div>
+			<!-- BOUTON VERS /uploads -->
+			<div style="text-align: center; margin: 40px 0;">
+				<a href="/uploads/" class="main-button upload-button">Access uploads</a>
+			</div>
+			<!--UPLOAD FILES------->
+			<div class="extra-actions">
+				<button type="button" class="main-button secondary">PROUT</button>
+				<a href="/images/rat.jpg" download class="main-button link-button">Download rat</a>
+			</div>
+			<div class="glorp-form">
+				<label for="sort-input">Sort numbers</label>
+				<input id="sort-input" type="text" placeholder="2,7,6,0">
+				<button id="sort-btn" type="button" class="main-button">Sort by CGI</button>
+			</div>
+			<pre id="sort-result" style="width: min(420px, 100%); margin: 0; padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); white-space: pre-wrap;"></pre>
+			<a href="http://www.savewalterwhite.com/" target="_blank" rel="noopener noreferrer">
+				<button type="button" class="ww-button">Walter White</button>
+			</a>
+		</section>
+	</main>
+	<script src="app.js"></script>
+</body>
+</html>

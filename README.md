@@ -46,6 +46,10 @@ The interface provides interactive tests for the main implemented features:
 
 
 
+https://github.com/user-attachments/assets/534a0917-c190-4b29-beef-bd4d2484b5d3
+
+
+
 
 ## ⚙️ Instructions
 
